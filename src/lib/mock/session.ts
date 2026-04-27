@@ -1,0 +1,207 @@
+import type { SprintSession } from "@/lib/types";
+
+const now = "2026-04-27T13:30:00.000Z";
+
+export const mockSprintSession: SprintSession = {
+  id: "session-livesprint-alpha",
+  name: "LiveSprint Alpha Build",
+  phase: "CODING",
+  timer: {
+    phase: "CODING",
+    isRunning: false,
+    durationSeconds: 5400,
+    remainingSeconds: 3120,
+    pausedAt: now,
+  },
+  users: [
+    {
+      id: "user-maya",
+      name: "Maya Chen",
+      role: "Frontend engineer",
+      avatarInitials: "MC",
+      presence: "online",
+      currentTaskId: "task-live-board",
+      joinedAt: "2026-04-27T12:04:00.000Z",
+      lastSeenAt: "2026-04-27T13:29:00.000Z",
+    },
+    {
+      id: "user-omar",
+      name: "Omar Patel",
+      role: "Backend engineer",
+      avatarInitials: "OP",
+      presence: "online",
+      currentTaskId: "task-session-reducer",
+      joinedAt: "2026-04-27T12:05:00.000Z",
+      lastSeenAt: "2026-04-27T13:28:00.000Z",
+    },
+    {
+      id: "user-nina",
+      name: "Nina Brooks",
+      role: "Platform engineer",
+      avatarInitials: "NB",
+      presence: "away",
+      currentTaskId: "task-ws-contract",
+      joinedAt: "2026-04-27T12:08:00.000Z",
+      lastSeenAt: "2026-04-27T13:12:00.000Z",
+    },
+    {
+      id: "user-eli",
+      name: "Eli Rivera",
+      role: "Tech lead",
+      avatarInitials: "ER",
+      presence: "online",
+      joinedAt: "2026-04-27T12:01:00.000Z",
+      lastSeenAt: "2026-04-27T13:30:00.000Z",
+    },
+  ],
+  tasks: [
+    {
+      id: "task-session-reducer",
+      title: "Implement authoritative session reducer",
+      description:
+        "Create a pure reducer for sprint events that can later sit behind WebSocket commands.",
+      status: "IN_PROGRESS",
+      reporterId: "user-eli",
+      assigneeId: "user-omar",
+      filePaths: [
+        "src/lib/session/index.ts",
+        "src/lib/events/index.ts",
+        "src/lib/types/sprint.ts",
+      ],
+      createdAt: "2026-04-27T12:10:00.000Z",
+      updatedAt: "2026-04-27T13:10:00.000Z",
+      startedAt: "2026-04-27T12:42:00.000Z",
+    },
+    {
+      id: "task-live-board",
+      title: "Render sprint board from session state",
+      description:
+        "Replace static dashboard placeholders with real session-backed sprint task data.",
+      status: "IN_PROGRESS",
+      reporterId: "user-eli",
+      assigneeId: "user-maya",
+      filePaths: [
+        "src/components/dashboard/DashboardShell.tsx",
+        "src/components/sprint/SprintBoard.tsx",
+      ],
+      createdAt: "2026-04-27T12:16:00.000Z",
+      updatedAt: "2026-04-27T13:18:00.000Z",
+      startedAt: "2026-04-27T12:50:00.000Z",
+    },
+    {
+      id: "task-ws-contract",
+      title: "Draft WebSocket command contract",
+      description:
+        "Document join, command, snapshot, and broadcast message shapes for Phase 3.",
+      status: "READY",
+      reporterId: "user-omar",
+      assigneeId: "user-nina",
+      filePaths: ["src/lib/events/index.ts", "src/lib/session/index.ts"],
+      createdAt: "2026-04-27T12:24:00.000Z",
+      updatedAt: "2026-04-27T12:55:00.000Z",
+    },
+    {
+      id: "task-conflict-fixtures",
+      title: "Prepare conflict-risk fixtures",
+      description:
+        "Capture realistic overlapping file path examples for the future risk detector.",
+      status: "BACKLOG",
+      reporterId: "user-eli",
+      filePaths: ["src/lib/conflicts/detectConflictRisk.ts"],
+      createdAt: "2026-04-27T12:30:00.000Z",
+      updatedAt: "2026-04-27T12:30:00.000Z",
+    },
+    {
+      id: "task-activity-feed",
+      title: "Shape activity feed event messages",
+      description:
+        "Make reducer output readable activity events for user, task, timer, and phase changes.",
+      status: "IN_REVIEW",
+      reporterId: "user-maya",
+      assigneeId: "user-eli",
+      filePaths: [
+        "src/components/activity/ActivityFeed.tsx",
+        "src/lib/session/index.ts",
+      ],
+      createdAt: "2026-04-27T12:35:00.000Z",
+      updatedAt: "2026-04-27T13:20:00.000Z",
+      startedAt: "2026-04-27T12:48:00.000Z",
+      reviewRequestedAt: "2026-04-27T13:20:00.000Z",
+    },
+    {
+      id: "task-readme-phase2",
+      title: "Document Phase 2 architecture",
+      description:
+        "Update README and plan with reducer, typed events, and current test coverage.",
+      status: "DONE",
+      reporterId: "user-eli",
+      assigneeId: "user-maya",
+      filePaths: ["README.md", "PLAN.md"],
+      createdAt: "2026-04-27T12:38:00.000Z",
+      updatedAt: "2026-04-27T13:25:00.000Z",
+      completedAt: "2026-04-27T13:25:00.000Z",
+    },
+  ],
+  activity: [
+    {
+      id: "activity-review-feed",
+      type: "task.review_requested",
+      actorId: "user-eli",
+      taskId: "task-activity-feed",
+      message:
+        'Eli Rivera requested review for "Shape activity feed event messages".',
+      createdAt: "2026-04-27T13:20:00.000Z",
+    },
+    {
+      id: "activity-start-board",
+      type: "task.started",
+      actorId: "user-maya",
+      taskId: "task-live-board",
+      message: 'Maya Chen started "Render sprint board from session state".',
+      createdAt: "2026-04-27T12:50:00.000Z",
+    },
+    {
+      id: "activity-phase-coding",
+      type: "phase.changed",
+      actorId: "user-eli",
+      message: "Eli Rivera changed the sprint phase to CODING.",
+      createdAt: "2026-04-27T12:40:00.000Z",
+    },
+    {
+      id: "activity-omar-joined",
+      type: "user.joined",
+      actorId: "user-omar",
+      message: "Omar Patel joined the sprint session.",
+      createdAt: "2026-04-27T12:05:00.000Z",
+    },
+  ],
+  commits: [
+    {
+      id: "commit-seed-reducer",
+      taskId: "task-session-reducer",
+      userId: "user-omar",
+      sha: "a18f42c",
+      message: "Add reducer skeleton for sprint events",
+      branch: "feature/session-reducer",
+      filesChanged: ["src/lib/session/index.ts", "src/lib/events/index.ts"],
+      committedAt: "2026-04-27T13:08:00.000Z",
+    },
+  ],
+  conflictRisks: [
+    {
+      id: "risk-session-overlap",
+      level: "MEDIUM",
+      taskIds: ["task-session-reducer", "task-ws-contract"],
+      userIds: ["user-omar", "user-nina"],
+      filePaths: ["src/lib/events/index.ts", "src/lib/session/index.ts"],
+      directory: "src/lib",
+      explanation:
+        "Two active tasks are planned around the same event/session modules.",
+      suggestedAction:
+        "Confirm ownership before changing shared event contracts.",
+      detectedAt: "2026-04-27T13:14:00.000Z",
+    },
+  ],
+  createdAt: "2026-04-27T12:00:00.000Z",
+  updatedAt: now,
+};
