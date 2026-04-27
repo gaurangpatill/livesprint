@@ -2,7 +2,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
 
-This repository is currently at Phase 3: real-time session engine. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
+This repository is currently at Phase 4: live sprint board. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
 
 ## Current Status
 
@@ -21,7 +21,9 @@ Implemented:
 - Socket.IO realtime session transport
 - Join flow with display names
 - Live presence updates
-- Live task assignment and status updates
+- Live task creation, editing, assignment, and status updates
+- Five-column sprint board: TODO, ACTIVE, BLOCKED, REVIEW, DONE
+- Related file path editing on tasks
 - Vitest reducer and command-adapter tests
 - Project plan in `PLAN.md`
 
@@ -125,6 +127,16 @@ src/lib/mock
 6. Confirm the task board and activity feed update in both tabs.
 7. Close one tab and confirm that user is marked offline in the remaining tab.
 
+## Phase 4 Demo Flow
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000` in two browser tabs.
+3. Join with a different display name in each tab.
+4. Create a task with a title, optional description, assignee, and related file paths.
+5. Confirm the new task appears in both tabs under TODO.
+6. Assign the task, move it to ACTIVE, mark it BLOCKED, move it to REVIEW, then mark it DONE.
+7. Confirm every task change updates the board and activity feed in both tabs without refresh.
+
 ## Architecture Direction
 
 The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
@@ -140,13 +152,25 @@ Phase 3 adds a custom server in `server.ts` using Socket.IO:
 
 - The server owns one in-memory `SprintSession`.
 - Clients connect through `useLiveSprintSession`.
-- Clients send typed commands such as `task:assign` and `task:update-status`.
+- Clients send typed commands such as `task:create`, `task:update`, `task:assign`, and `task:update-status`.
 - The server validates command payloads in `src/lib/realtime/commands.ts`.
 - The server converts commands to `LiveSprintEvent` objects.
 - The existing reducer applies events and appends activity feed entries.
 - The server broadcasts updated session state to every connected client.
 
 Socket.IO was chosen over hand-rolled WebSocket handling because this Next.js App Router project benefits from built-in reconnection, acknowledgements, and typed event channels. The tradeoff is a custom Next server, so deployments must run `server.ts` rather than a purely static or serverless Next target.
+
+Phase 4 expands the task flow:
+
+- The sprint board groups tasks into TODO, ACTIVE, BLOCKED, REVIEW, and DONE columns.
+- Task creation emits `task.created`.
+- Title, description, assignee, and related file edits emit `task.updated` or `task.assigned`.
+- Starting work emits `task.started`.
+- Blocking work emits `task.blocked`.
+- Review handoff emits `task.review_requested`.
+- Completion emits `task.completed`.
+
+Every task event includes `actorId` and a server timestamp, is reduced on the server, and appears in the activity feed in real time.
 
 Conflict risk will be derived from active task file paths:
 

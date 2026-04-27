@@ -95,6 +95,30 @@ describe("reduceSprintSession", () => {
     expect(next.activity[0].message).toContain("Nina Brooks");
   });
 
+  it("marks a task as blocked", () => {
+    const session = freshSession();
+
+    const next = reduceSprintSession(
+      session,
+      event({
+        id: "event-block-task",
+        type: "task.blocked",
+        actorId: "user-omar",
+        occurredAt: "2026-04-27T14:12:00.000Z",
+        taskId: "task-session-reducer",
+        reason: "Waiting on event contract review",
+      }),
+    );
+
+    const task = next.tasks.find((item) => item.id === "task-session-reducer");
+    expect(task).toMatchObject({
+      status: "BLOCKED",
+      blockedAt: "2026-04-27T14:12:00.000Z",
+      updatedAt: "2026-04-27T14:12:00.000Z",
+    });
+    expect(next.activity[0].message).toContain("as BLOCKED");
+  });
+
   it("changes the sprint phase and updates timer phase", () => {
     const session = freshSession();
 

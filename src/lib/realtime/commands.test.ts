@@ -3,7 +3,9 @@ import { mockSprintSession } from "@/lib/mock/session";
 import {
   createAssignTaskEvent,
   createJoinedUser,
+  createTaskCreatedEvent,
   createTaskStatusEvent,
+  createTaskUpdatedEvent,
   getInitials,
   normalizeDisplayName,
 } from "@/lib/realtime/commands";
@@ -41,6 +43,65 @@ describe("realtime command adapters", () => {
       type: "task.completed",
       actorId: "user-maya",
       taskId: "task-live-board",
+    });
+  });
+
+  it("creates task.created events with normalized fields", () => {
+    const event = createTaskCreatedEvent(
+      mockSprintSession,
+      {
+        title: "  Build task composer  ",
+        description: " Adds the board task form. ",
+        assigneeId: "user-maya",
+        filePaths: [
+          "/src/components/sprint/SprintBoard.tsx",
+          "src/components/sprint/SprintBoard.tsx",
+          "src/lib/realtime/protocol.ts",
+        ],
+      },
+      "user-eli",
+      "2026-04-27T15:08:00.000Z",
+    );
+
+    expect(event).toMatchObject({
+      type: "task.created",
+      actorId: "user-eli",
+      task: {
+        title: "Build task composer",
+        description: "Adds the board task form.",
+        status: "READY",
+        reporterId: "user-eli",
+        assigneeId: "user-maya",
+        filePaths: [
+          "src/components/sprint/SprintBoard.tsx",
+          "src/lib/realtime/protocol.ts",
+        ],
+      },
+    });
+  });
+
+  it("creates task.updated events for editable task details", () => {
+    const event = createTaskUpdatedEvent(
+      mockSprintSession,
+      {
+        taskId: "task-live-board",
+        title: "Render live sprint flow",
+        description: "Use five workflow columns.",
+        filePaths: ["src/components/sprint/SprintBoard.tsx"],
+      },
+      "user-maya",
+      "2026-04-27T15:09:00.000Z",
+    );
+
+    expect(event).toMatchObject({
+      type: "task.updated",
+      actorId: "user-maya",
+      taskId: "task-live-board",
+      updates: {
+        title: "Render live sprint flow",
+        description: "Use five workflow columns.",
+        filePaths: ["src/components/sprint/SprintBoard.tsx"],
+      },
     });
   });
 

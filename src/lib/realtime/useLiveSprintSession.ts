@@ -10,8 +10,10 @@ import type {
   ServerToClientEvents,
   TaskAssignPayload,
   TaskBlockedPayload,
+  TaskCreatePayload,
   TaskDonePayload,
   TaskStatusPayload,
+  TaskUpdatePayload,
 } from "@/lib/realtime/protocol";
 import type { SprintSession, TaskStatus } from "@/lib/types";
 
@@ -87,6 +89,7 @@ export function useLiveSprintSession({
       eventName: keyof Pick<
         ClientToServerEvents,
         "task:assign" | "task:update-status" | "task:block" | "task:complete"
+        | "task:create" | "task:update"
       >,
       payload: TPayload,
       emit: CommandEmitter<TPayload>,
@@ -177,6 +180,26 @@ export function useLiveSprintSession({
     [emitCommand],
   );
 
+  const createTask = useCallback(
+    (payload: TaskCreatePayload) => {
+      const socket = socketRef.current;
+      return emitCommand("task:create", payload, (body, ack) =>
+        socket?.emit("task:create", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
+  const updateTask = useCallback(
+    (payload: TaskUpdatePayload) => {
+      const socket = socketRef.current;
+      return emitCommand("task:update", payload, (body, ack) =>
+        socket?.emit("task:update", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
   const updateTaskStatus = useCallback(
     (taskId: string, status: TaskStatus) => {
       const socket = socketRef.current;
@@ -217,6 +240,8 @@ export function useLiveSprintSession({
     isJoined: Boolean(joinedUserId),
     joinSession,
     leaveSession,
+    createTask,
+    updateTask,
     assignTask,
     updateTaskStatus,
     blockTask,

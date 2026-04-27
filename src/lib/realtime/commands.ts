@@ -3,10 +3,13 @@ import type {
   JoinSessionPayload,
   TaskAssignPayload,
   TaskBlockedPayload,
+  TaskCreatePayload,
   TaskDonePayload,
   TaskStatusPayload,
+  TaskUpdatePayload,
 } from "@/lib/realtime/protocol";
-import type { SprintSession, SprintUser, TaskStatus } from "@/lib/types";
+import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import type { SprintSession, SprintTask, SprintUser, TaskStatus } from "@/lib/types";
 
 const validTaskStatuses: TaskStatus[] = [
   "BACKLOG",
@@ -56,7 +59,7 @@ export function createJoinedUser(
   };
 }
 
-function ensureJoined(actorId?: string) {
+function ensureJoined(actorId?: string): asserts actorId is string {
   if (!actorId) {
     throw new Error("Join the sprint session before sending task updates.");
   }
@@ -78,6 +81,90 @@ function ensureStatus(status: TaskStatus) {
   if (!validTaskStatuses.includes(status)) {
     throw new Error("Invalid task status.");
   }
+}
+
+function normalizeTaskTitle(title?: string) {
+  const normalizedTitle = title?.trim().replace(/\s+/g, " ").slice(0, 120) ?? "";
+
+  if (!normalizedTitle) {
+    throw new Error("Task title is required.");
+  }
+
+  return normalizedTitle;
+}
+
+function normalizeTaskDescription(description?: string) {
+  return description?.trim().slice(0, 600) ?? "";
+}
+
+function ensureOptionalUserExists(session: SprintSession, userId?: string) {
+  if (userId) {
+    ensureUserExists(session, userId);
+  }
+}
+
+export function createTaskCreatedEvent(
+  session: SprintSession,
+  payload: TaskCreatePayload,
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+  ensureOptionalUserExists(session, payload.assigneeId);
+  const reporterId = actorId;
+
+  const task: SprintTask = {
+    id: `task-live-${crypto.randomUUID()}`,
+    title: normalizeTaskTitle(payload.title),
+    description: normalizeTaskDescription(payload.description),
+    status: "READY",
+    reporterId,
+    assigneeId: payload.assigneeId,
+    filePaths: normalizeFilePaths(payload.filePaths ?? []),
+    createdAt: occurredAt,
+    updatedAt: occurredAt,
+  };
+
+  return {
+    id: createEventId("event-task-created"),
+    type: "task.created",
+    actorId,
+    occurredAt,
+    task,
+  };
+}
+
+export function createTaskUpdatedEvent(
+  session: SprintSession,
+  payload: TaskUpdatePayload,
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+  ensureTaskExists(session, payload.taskId);
+  ensureOptionalUserExists(session, payload.assigneeId);
+
+  return {
+    id: createEventId("event-task-updated"),
+    type: "task.updated",
+    actorId,
+    occurredAt,
+    taskId: payload.taskId,
+    updates: {
+      ...(payload.title !== undefined
+        ? { title: normalizeTaskTitle(payload.title) }
+        : {}),
+      ...(payload.description !== undefined
+        ? { description: normalizeTaskDescription(payload.description) }
+        : {}),
+      ...(payload.assigneeId !== undefined
+        ? { assigneeId: payload.assigneeId || undefined }
+        : {}),
+      ...(payload.filePaths !== undefined
+        ? { filePaths: normalizeFilePaths(payload.filePaths) }
+        : {}),
+    },
+  };
 }
 
 export function createAssignTaskEvent(

@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 3 now runs a custom Next.js server with Socket.IO attached so the existing reducer can drive server-authoritative collaboration.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 4 now provides a live five-column sprint board where task creation, assignment, editing, and status changes go through the server-authoritative reducer.
 
 The target architecture will use:
 
@@ -99,6 +99,8 @@ Status: implemented with a Socket.IO custom server, one in-memory authoritative 
 
 - Tasks can be created, assigned, updated, blocked, reviewed, completed
 - All task updates broadcast live
+
+Status: implemented with TODO, ACTIVE, BLOCKED, REVIEW, and DONE columns. Task create/update/assign/status commands are validated on the server, converted to typed events, reduced into session state, and broadcast to all clients.
 
 ### Phase 5: Activity feed
 
@@ -167,6 +169,8 @@ This keeps synchronization explicit and testable.
 Phase 2 implements the reducer boundary but not the network transport. The reducer accepts current `SprintSession` state and a typed `LiveSprintEvent`, then returns a new session state without mutating the original.
 
 Phase 3 implements the transport with Socket.IO in `server.ts`. Clients use `useLiveSprintSession`, receive a current snapshot, send typed task commands, and receive updated session state after the server applies the reducer. Socket.IO was chosen for acknowledgements and reconnection support; the tradeoff is that the app now runs through a custom Next server for realtime mode.
+
+Phase 4 extends the command model with `task:create` and `task:update` commands. The server maps those commands to `task.created`, `task.updated`, `task.assigned`, `task.started`, `task.blocked`, `task.review_requested`, and `task.completed` events so the board and activity feed stay synchronized.
 
 ## Merge-Conflict Risk Detection Strategy
 

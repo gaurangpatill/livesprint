@@ -25,6 +25,21 @@ export type TaskAssignPayload = {
   assigneeId: string;
 };
 
+export type TaskCreatePayload = {
+  title: string;
+  description?: string;
+  assigneeId?: string;
+  filePaths?: string[];
+};
+
+export type TaskUpdatePayload = {
+  taskId: string;
+  title?: string;
+  description?: string;
+  assigneeId?: string;
+  filePaths?: string[];
+};
+
 export type TaskStatusPayload = {
   taskId: string;
   status: TaskStatus;
@@ -66,6 +81,14 @@ export type ClientToServerEvents = {
     ack?: (response: JoinSessionAck) => void,
   ) => void;
   "session:leave": (ack?: (response: RealtimeCommandAck) => void) => void;
+  "task:create": (
+    payload: TaskCreatePayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
+  "task:update": (
+    payload: TaskUpdatePayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
   "task:assign": (
     payload: TaskAssignPayload,
     ack?: (response: RealtimeCommandAck) => void,

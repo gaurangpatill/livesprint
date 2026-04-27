@@ -22,6 +22,8 @@ export function DashboardShell() {
     isJoined,
     joinSession,
     leaveSession,
+    createTask,
+    updateTask,
     assignTask,
     updateTaskStatus,
     blockTask,
@@ -52,8 +54,9 @@ export function DashboardShell() {
               Server-authoritative sprint state, live across clients.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
-              Phase 3 routes joins, presence, task assignments, and task status
-              changes through the realtime session engine.
+              Phase 4 turns the sprint board into a fully interactive shared
+              task system with server-authoritative creation, edits, and flow
+              changes.
             </p>
           </div>
 
@@ -152,11 +155,13 @@ export function DashboardShell() {
         <section className="grid flex-1 gap-5 pb-6 xl:grid-cols-[1.6fr_0.9fr]">
           <SprintBoard
             canEdit={isJoined}
+            onCreateTask={createTask}
             onAssignTask={(taskId, assigneeId) =>
               assignTask({ taskId, assigneeId })
             }
             onBlockTask={(taskId) => blockTask({ taskId })}
             onCompleteTask={(taskId) => completeTask({ taskId })}
+            onUpdateTask={updateTask}
             onUpdateTaskStatus={updateTaskStatus}
             session={session}
           />
@@ -186,7 +191,7 @@ export function DashboardShell() {
                   "Core sprint domain types",
                   "Typed event model",
                   "Pure session reducer",
-                  "Socket.IO session engine",
+                  "Live sprint board",
                 ].map((item) => (
                   <div
                     className="flex items-center justify-between border-b border-white/8 pb-3 text-sm last:border-b-0 last:pb-0"

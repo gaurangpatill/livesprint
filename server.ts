@@ -9,7 +9,9 @@ import {
   createDoneTaskEvent,
   createEventId,
   createJoinedUser,
+  createTaskCreatedEvent,
   createTaskStatusEvent,
+  createTaskUpdatedEvent,
 } from "./src/lib/realtime/commands";
 import type {
   ClientToServerEvents,
@@ -123,6 +125,44 @@ async function main() {
       socket.data.userId = undefined;
       applyAndBroadcast(io, event);
       ack?.({ ok: true });
+    });
+
+    socket.on("task:create", (payload, ack) => {
+      try {
+        const event = createTaskCreatedEvent(
+          currentSession,
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_TASK_CREATE",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("task:update", (payload, ack) => {
+      try {
+        const event = createTaskUpdatedEvent(
+          currentSession,
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_TASK_UPDATE",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
     });
 
     socket.on("task:assign", (payload, ack) => {

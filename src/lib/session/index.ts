@@ -51,27 +51,27 @@ function getActivityMessage(
     case "user.left":
       return `${getUserName(previousSession.users, event.userId)} left the sprint session.`;
     case "task.created":
-      return `${actor} created "${event.task.title}".`;
+      return `${actor} created Task: ${event.task.title}.`;
     case "task.updated":
-      return `${actor} updated "${getTaskTitle(nextSession.tasks, event.taskId)}".`;
+      return `${actor} updated Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
     case "task.assigned":
-      return `${actor} assigned "${getTaskTitle(nextSession.tasks, event.taskId)}" to ${getUserName(
+      return `${actor} assigned Task: ${getTaskTitle(nextSession.tasks, event.taskId)} to ${getUserName(
         nextSession.users,
         event.assigneeId,
       )}.`;
     case "task.started":
-      return `${actor} started "${getTaskTitle(nextSession.tasks, event.taskId)}".`;
+      return `${actor} started Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
     case "task.blocked":
-      return `${actor} blocked "${getTaskTitle(nextSession.tasks, event.taskId)}"${
+      return `${actor} marked Task: ${getTaskTitle(nextSession.tasks, event.taskId)} as BLOCKED${
         event.reason ? `: ${event.reason}` : "."
       }`;
     case "task.review_requested":
-      return `${actor} requested review for "${getTaskTitle(
+      return `${actor} requested review for Task: ${getTaskTitle(
         nextSession.tasks,
         event.taskId,
-      )}".`;
+      )}.`;
     case "task.completed":
-      return `${actor} completed "${getTaskTitle(nextSession.tasks, event.taskId)}".`;
+      return `${actor} completed Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
     case "phase.changed":
       return `${actor} changed the sprint phase to ${event.phase}.`;
     case "timer.started":
