@@ -10,6 +10,12 @@ import type {
   SprintTask,
   SprintUser,
 } from "@/lib/types";
+import {
+  changeTimerPhase,
+  pauseTimer,
+  resetTimer,
+  startTimer,
+} from "@/lib/timer";
 
 function createActivityEvent(
   previousSession: SprintSession,
@@ -37,24 +43,6 @@ function updateTask(
   updater: (task: SprintTask) => SprintTask,
 ) {
   return tasks.map((task) => (task.id === taskId ? updater(task) : task));
-}
-
-function calculatePausedRemainingSeconds(
-  session: SprintSession,
-  occurredAt: string,
-) {
-  if (!session.timer.startedAt) {
-    return session.timer.remainingSeconds;
-  }
-
-  const elapsedSeconds = Math.max(
-    0,
-    Math.floor(
-      (Date.parse(occurredAt) - Date.parse(session.timer.startedAt)) / 1000,
-    ),
-  );
-
-  return Math.max(0, session.timer.remainingSeconds - elapsedSeconds);
 }
 
 function applyEvent(
@@ -203,52 +191,32 @@ function applyEvent(
       return {
         ...session,
         phase: event.phase,
-        timer: {
-          ...session.timer,
-          phase: event.phase,
-          isRunning: false,
-          startedAt: undefined,
-          pausedAt: event.occurredAt,
-        },
+        timer: changeTimerPhase(session.timer, event.phase, event.occurredAt),
         updatedAt: event.occurredAt,
       };
 
     case "timer.started":
       return {
         ...session,
-        timer: {
-          ...session.timer,
-          isRunning: true,
-          startedAt: event.occurredAt,
-          pausedAt: undefined,
-        },
+        timer: startTimer(session.timer, event.occurredAt),
         updatedAt: event.occurredAt,
       };
 
     case "timer.paused":
       return {
         ...session,
-        timer: {
-          ...session.timer,
-          isRunning: false,
-          remainingSeconds: calculatePausedRemainingSeconds(session, event.occurredAt),
-          pausedAt: event.occurredAt,
-          startedAt: undefined,
-        },
+        timer: pauseTimer(session.timer, event.occurredAt),
         updatedAt: event.occurredAt,
       };
 
     case "timer.reset":
       return {
         ...session,
-        timer: {
-          ...session.timer,
-          isRunning: false,
-          remainingSeconds: event.remainingSeconds ?? session.timer.durationSeconds,
-          startedAt: undefined,
-          pausedAt: undefined,
-          resetAt: event.occurredAt,
-        },
+        timer: resetTimer(
+          session.timer,
+          event.occurredAt,
+          event.durationSeconds ?? event.remainingSeconds ?? session.timer.durationSeconds,
+        ),
         updatedAt: event.occurredAt,
       };
 

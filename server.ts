@@ -9,9 +9,13 @@ import {
   createDoneTaskEvent,
   createEventId,
   createJoinedUser,
+  createPhaseChangedEvent,
   createTaskCreatedEvent,
   createTaskStatusEvent,
   createTaskUpdatedEvent,
+  createTimerPausedEvent,
+  createTimerResetEvent,
+  createTimerStartedEvent,
 } from "./src/lib/realtime/commands";
 import type {
   ClientToServerEvents,
@@ -22,6 +26,7 @@ import type {
   SocketData,
 } from "./src/lib/realtime/protocol";
 import { reduceSprintSession } from "./src/lib/session";
+import { getCurrentTimerState } from "./src/lib/timer";
 import type { SprintSession } from "./src/lib/types";
 
 const dev = process.env.NODE_ENV !== "production";
@@ -29,6 +34,16 @@ const hostname = process.env.HOSTNAME ?? "0.0.0.0";
 const port = Number.parseInt(process.env.PORT ?? "3000", 10);
 
 let currentSession: SprintSession = structuredClone(mockSprintSession);
+
+function getAuthoritativeSessionSnapshot() {
+  const now = new Date().toISOString();
+  currentSession = {
+    ...currentSession,
+    timer: getCurrentTimerState(currentSession.timer, now),
+  };
+
+  return currentSession;
+}
 
 function applyAndBroadcast(
   io: Server<
@@ -39,6 +54,7 @@ function applyAndBroadcast(
   >,
   event: LiveSprintEvent,
 ) {
+  getAuthoritativeSessionSnapshot();
   currentSession = reduceSprintSession(currentSession, event);
   io.emit("session:event", { event, session: currentSession });
 }
@@ -73,12 +89,16 @@ async function main() {
   });
 
   io.on("connection", (socket) => {
-    socket.emit("session:snapshot", currentSession);
+    socket.emit("session:snapshot", getAuthoritativeSessionSnapshot());
 
     socket.on("session:join", (payload, ack?: (response: JoinSessionAck) => void) => {
       try {
         if (socket.data.userId) {
-          ack?.({ ok: true, userId: socket.data.userId, session: currentSession });
+          ack?.({
+            ok: true,
+            userId: socket.data.userId,
+            session: getAuthoritativeSessionSnapshot(),
+          });
           return;
         }
 
@@ -235,6 +255,76 @@ async function main() {
       } catch (error) {
         socket.emit("session:error", {
           code: "INVALID_TASK_COMPLETE",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("phase:change", (payload, ack) => {
+      try {
+        const event = createPhaseChangedEvent(
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_PHASE_CHANGE",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("timer:start", (ack) => {
+      try {
+        const event = createTimerStartedEvent(
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_TIMER_START",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("timer:pause", (ack) => {
+      try {
+        const event = createTimerPausedEvent(
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_TIMER_PAUSE",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("timer:reset", (payload, ack) => {
+      try {
+        const event = createTimerResetEvent(
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_TIMER_RESET",
           message: getErrorMessage(error),
         });
         acknowledgeError(ack, error);

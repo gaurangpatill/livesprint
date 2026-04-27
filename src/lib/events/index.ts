@@ -88,6 +88,7 @@ export type LiveSprintEvent =
   | (BaseLiveSprintEvent & {
       type: "timer.reset";
       remainingSeconds?: number;
+      durationSeconds?: number;
     })
   | (BaseLiveSprintEvent & {
       type: "commit.linked";

@@ -28,6 +28,10 @@ export function DashboardShell() {
     updateTaskStatus,
     blockTask,
     completeTask,
+    changePhase,
+    startTimer,
+    pauseTimer,
+    resetTimer,
   } = useLiveSprintSession({ initialSession: mockSprintSession });
   const dashboardModules = getDashboardModules(session);
   const foundationStats = getFoundationStats(session);
@@ -168,7 +172,15 @@ export function DashboardShell() {
 
           <aside className="grid content-start gap-5">
             <PresencePanel session={session} />
-            <SprintTimerPanel timer={session.timer} />
+            <SprintTimerPanel
+              canEdit={isJoined}
+              key={`${session.timer.phase}-${session.timer.durationSeconds}`}
+              onChangePhase={changePhase}
+              onPause={pauseTimer}
+              onReset={resetTimer}
+              onStart={startTimer}
+              timer={session.timer}
+            />
             <ActivityFeed session={session} />
             <ConflictRiskPanel session={session} />
             <MockGithubEventsPanel session={session} />

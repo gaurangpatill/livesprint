@@ -20,6 +20,7 @@ export type TimerState = {
   startedAt?: string;
   pausedAt?: string;
   resetAt?: string;
+  updatedAt: string;
 };
 
 export type SprintUser = {

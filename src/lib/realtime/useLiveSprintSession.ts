@@ -6,6 +6,7 @@ import type {
   ClientToServerEvents,
   ConnectionStatus,
   JoinSessionAck,
+  PhaseChangePayload,
   RealtimeCommandAck,
   ServerToClientEvents,
   TaskAssignPayload,
@@ -14,8 +15,9 @@ import type {
   TaskDonePayload,
   TaskStatusPayload,
   TaskUpdatePayload,
+  TimerResetPayload,
 } from "@/lib/realtime/protocol";
-import type { SprintSession, TaskStatus } from "@/lib/types";
+import type { SprintPhase, SprintSession, TaskStatus } from "@/lib/types";
 
 type LiveSprintSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -89,7 +91,7 @@ export function useLiveSprintSession({
       eventName: keyof Pick<
         ClientToServerEvents,
         "task:assign" | "task:update-status" | "task:block" | "task:complete"
-        | "task:create" | "task:update"
+        | "task:create" | "task:update" | "phase:change" | "timer:reset"
       >,
       payload: TPayload,
       emit: CommandEmitter<TPayload>,
@@ -232,6 +234,76 @@ export function useLiveSprintSession({
     [emitCommand],
   );
 
+  const changePhase = useCallback(
+    (phase: SprintPhase) => {
+      const socket = socketRef.current;
+      const payload: PhaseChangePayload = { phase };
+
+      return emitCommand("phase:change", payload, (body, ack) =>
+        socket?.emit("phase:change", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
+  const startTimer = useCallback(() => {
+    const socket = socketRef.current;
+
+    if (!socket?.connected) {
+      const message = "Realtime server is disconnected.";
+      setError(message);
+      return Promise.reject(new Error(message));
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      socket.emit("timer:start", (response) => {
+        if (response.ok) {
+          setError(undefined);
+          resolve();
+          return;
+        }
+
+        const message = response.error ?? "Could not start the sprint timer.";
+        setError(message);
+        reject(new Error(message));
+      });
+    });
+  }, []);
+
+  const pauseTimer = useCallback(() => {
+    const socket = socketRef.current;
+
+    if (!socket?.connected) {
+      const message = "Realtime server is disconnected.";
+      setError(message);
+      return Promise.reject(new Error(message));
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      socket.emit("timer:pause", (response) => {
+        if (response.ok) {
+          setError(undefined);
+          resolve();
+          return;
+        }
+
+        const message = response.error ?? "Could not pause the sprint timer.";
+        setError(message);
+        reject(new Error(message));
+      });
+    });
+  }, []);
+
+  const resetTimer = useCallback(
+    (payload: TimerResetPayload = {}) => {
+      const socket = socketRef.current;
+      return emitCommand("timer:reset", payload, (body, ack) =>
+        socket?.emit("timer:reset", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
   return {
     session,
     status,
@@ -246,6 +318,10 @@ export function useLiveSprintSession({
     updateTaskStatus,
     blockTask,
     completeTask,
+    changePhase,
+    startTimer,
+    pauseTimer,
+    resetTimer,
     clearError: () => setError(undefined),
   };
 }

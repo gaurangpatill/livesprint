@@ -12,6 +12,7 @@ export const mockSprintSession: SprintSession = {
     durationSeconds: 5400,
     remainingSeconds: 3120,
     pausedAt: now,
+    updatedAt: now,
   },
   users: [
     {

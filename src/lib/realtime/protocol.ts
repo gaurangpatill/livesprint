@@ -1,5 +1,5 @@
 import type { LiveSprintEvent } from "@/lib/events";
-import type { SprintSession, TaskStatus } from "@/lib/types";
+import type { SprintPhase, SprintSession, TaskStatus } from "@/lib/types";
 
 export type ConnectionStatus =
   | "idle"
@@ -54,6 +54,14 @@ export type TaskDonePayload = {
   taskId: string;
 };
 
+export type PhaseChangePayload = {
+  phase: SprintPhase;
+};
+
+export type TimerResetPayload = {
+  durationSeconds?: number;
+};
+
 export type RealtimeCommandAck = {
   ok: boolean;
   error?: string;
@@ -103,6 +111,16 @@ export type ClientToServerEvents = {
   ) => void;
   "task:complete": (
     payload: TaskDonePayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
+  "phase:change": (
+    payload: PhaseChangePayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
+  "timer:start": (ack?: (response: RealtimeCommandAck) => void) => void;
+  "timer:pause": (ack?: (response: RealtimeCommandAck) => void) => void;
+  "timer:reset": (
+    payload: TimerResetPayload,
     ack?: (response: RealtimeCommandAck) => void,
   ) => void;
 };

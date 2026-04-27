@@ -2,7 +2,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
 
-This repository is currently at Phase 5: live activity feed. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
+This repository is currently at Phase 6: shared sprint phase timer. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
 
 ## Current Status
 
@@ -26,6 +26,7 @@ Implemented:
 - Related file path editing on tasks
 - First-class live activity timeline with event filters
 - Shared event formatter for human-readable activity messages
+- Server-authoritative sprint phase timer with start, pause, reset, phase change, and duration control
 - Vitest reducer and command-adapter tests
 - Project plan in `PLAN.md`
 
@@ -148,6 +149,15 @@ src/lib/mock
 5. Watch the Activity Feed update in both tabs with actor, timestamp, type badge, and readable message.
 6. Use the feed filters: All, Tasks, Users, Timer/Phase, Git, and Conflicts.
 
+## Phase 6 Demo Flow
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000` in two browser tabs.
+3. Join with different display names.
+4. Start, pause, reset, or change the timer phase in one tab.
+5. Confirm the other tab receives the same phase and countdown state.
+6. Join from a third tab after the timer is already running and confirm it receives the current authoritative timer snapshot.
+
 ## Architecture Direction
 
 The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
@@ -191,6 +201,15 @@ Phase 5 makes the activity feed a first-class event stream:
 - Lightweight filters group events into Tasks, Users, Timer/Phase, Git, and Conflicts.
 - Git and conflict filters are ready for future phases; they show matching placeholder events when those typed events are emitted.
 
+Phase 6 adds a synchronized sprint timer:
+
+- `src/lib/timer` contains pure timer logic for start, pause, reset, phase changes, and remaining-time calculation.
+- Clients send `timer:start`, `timer:pause`, `timer:reset`, and `phase:change` commands.
+- The server materializes the current timer before applying new events, then broadcasts the accepted session state.
+- Late joiners receive a snapshot with the current authoritative timer.
+- Clients derive the visible countdown locally from the synchronized `startedAt`, `remainingSeconds`, and `updatedAt` fields.
+- Timer and phase events appear in the activity feed through `timer.started`, `timer.paused`, `timer.reset`, and `phase.changed`.
+
 Conflict risk will be derived from active task file paths:
 
 - `LOW`: one active task touches a file
@@ -204,6 +223,7 @@ Mock GitHub events will be typed event inputs first, so real webhook ingestion c
 - Session state is in memory and resets when the server restarts.
 - There is one shared sprint session.
 - Reconnect does not restore identity automatically; the user can join again.
+- Timer countdown is synchronized from server events and locally displayed between events; there is no separate per-second server broadcast.
 - There is no authentication or authorization.
 - Conflict-risk records are still seeded placeholders.
 - GitHub events are not interactive yet.

@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 5 now treats activity as a first-class event stream with shared formatting, live timeline rendering, and event-category filters.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 6 now includes a server-authoritative sprint phase timer synchronized across connected clients.
 
 The target architecture will use:
 
@@ -115,6 +115,8 @@ Status: implemented with a reusable event formatter, reverse-chronological live 
 - Start, pause, reset, change phase
 - All clients see same authoritative timer state
 
+Status: implemented with timer commands, pure timer logic, phase changes, duration reset support, late-join snapshots, and activity feed events for phase/timer actions.
+
 ### Phase 7: Merge-conflict risk detection
 
 - Track related file paths per active task
@@ -175,6 +177,8 @@ Phase 3 implements the transport with Socket.IO in `server.ts`. Clients use `use
 Phase 4 extends the command model with `task:create` and `task:update` commands. The server maps those commands to `task.created`, `task.updated`, `task.assigned`, `task.started`, `task.blocked`, `task.review_requested`, and `task.completed` events so the board and activity feed stay synchronized.
 
 Phase 5 centralizes readable event formatting under `src/lib/events/formatters.ts`. The reducer uses this formatter to append activity entries, and the UI groups stored activity by event category without changing the realtime engine.
+
+Phase 6 adds `phase:change`, `timer:start`, `timer:pause`, and `timer:reset` commands. The server materializes the current timer before applying events so late joiners and command handlers use authoritative remaining time. Clients render the countdown locally between server broadcasts from `startedAt`, `remainingSeconds`, and `updatedAt`.
 
 ## Merge-Conflict Risk Detection Strategy
 

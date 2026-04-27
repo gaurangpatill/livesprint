@@ -1,14 +1,17 @@
 import type { LiveSprintEvent } from "@/lib/events";
 import type {
   JoinSessionPayload,
+  PhaseChangePayload,
   TaskAssignPayload,
   TaskBlockedPayload,
   TaskCreatePayload,
   TaskDonePayload,
   TaskStatusPayload,
   TaskUpdatePayload,
+  TimerResetPayload,
 } from "@/lib/realtime/protocol";
 import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import { clampDurationSeconds, sprintPhases } from "@/lib/timer";
 import type { SprintSession, SprintTask, SprintUser, TaskStatus } from "@/lib/types";
 
 const validTaskStatuses: TaskStatus[] = [
@@ -61,7 +64,7 @@ export function createJoinedUser(
 
 function ensureJoined(actorId?: string): asserts actorId is string {
   if (!actorId) {
-    throw new Error("Join the sprint session before sending task updates.");
+    throw new Error("Join the sprint session before sending realtime updates.");
   }
 }
 
@@ -80,6 +83,12 @@ function ensureUserExists(session: SprintSession, userId: string) {
 function ensureStatus(status: TaskStatus) {
   if (!validTaskStatuses.includes(status)) {
     throw new Error("Invalid task status.");
+  }
+}
+
+function ensurePhase(phase: string) {
+  if (!sprintPhases.includes(phase as never)) {
+    throw new Error("Invalid sprint phase.");
   }
 }
 
@@ -281,5 +290,71 @@ export function createDoneTaskEvent(
     actorId,
     occurredAt,
     taskId: payload.taskId,
+  };
+}
+
+export function createPhaseChangedEvent(
+  payload: PhaseChangePayload,
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+  ensurePhase(payload.phase);
+
+  return {
+    id: createEventId("event-phase-changed"),
+    type: "phase.changed",
+    actorId,
+    occurredAt,
+    phase: payload.phase,
+  };
+}
+
+export function createTimerStartedEvent(
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+
+  return {
+    id: createEventId("event-timer-started"),
+    type: "timer.started",
+    actorId,
+    occurredAt,
+  };
+}
+
+export function createTimerPausedEvent(
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+
+  return {
+    id: createEventId("event-timer-paused"),
+    type: "timer.paused",
+    actorId,
+    occurredAt,
+  };
+}
+
+export function createTimerResetEvent(
+  payload: TimerResetPayload,
+  actorId: string | undefined,
+  occurredAt: string,
+): LiveSprintEvent {
+  ensureJoined(actorId);
+
+  const durationSeconds =
+    payload.durationSeconds === undefined
+      ? undefined
+      : clampDurationSeconds(payload.durationSeconds);
+
+  return {
+    id: createEventId("event-timer-reset"),
+    type: "timer.reset",
+    actorId,
+    occurredAt,
+    durationSeconds,
   };
 }
