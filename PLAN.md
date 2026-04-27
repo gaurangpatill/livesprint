@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP is a Next.js App Router application with TypeScript, Tailwind CSS, Socket.IO, a custom Node server, and one server-authoritative in-memory sprint session. Through Phase 9, LiveSprint has a demo-ready dashboard, typed event model, pure reducer, live task flow, shared timer, conflict-risk detection, mock GitHub events, validation, tests, and recruiter-ready documentation.
+The MVP is a Next.js App Router application with TypeScript, Tailwind CSS, Socket.IO, a custom Node server, a card-based operations dashboard landing page, focused dashboard routes backed by REST metadata, and one server-authoritative in-memory sprint session. Through Phase 9, LiveSprint has a demo-ready dashboard, typed event model, pure reducer, live task flow, shared timer, conflict-risk detection, mock GitHub events, validation, tests, and recruiter-ready documentation.
 
 The target architecture will use:
 
@@ -41,6 +41,7 @@ The target architecture will use:
 - TypeScript shared models for sprint state, users, tasks, activity, commits, and risk
 - A centralized event reducer/session state manager implemented as a pure function
 - Socket.IO realtime transport for synchronized sessions
+- REST dashboard configuration routes for focused dashboard views
 - In-memory authoritative state for the MVP
 - Mock GitHub-style events before real webhooks
 - Unit tests for event handling and merge-conflict risk logic
@@ -145,6 +146,8 @@ Status: implemented with a mock GitHub adapter, commit/PR simulator UI, typed `c
 
 Status: implemented with dashboard copy/empty-state polish, stronger seed data, practical task/Git/file/timer validation, additional tests, and refreshed README plus architecture/demo/testing docs.
 
+Focused cleanup: implemented route-specific dashboards, a REST dashboard configuration API, card-based dashboard navigation on the operations landing page, a horizontal kanban board with usable task controls, and Next-style local/network startup output for the custom realtime server.
+
 ## Data Model
 
 The core domain model centers on a `SprintSession` containing users, tasks, activity, sprint phase/timer state, commit events, and conflict risk records.
@@ -191,6 +194,8 @@ Phase 7 recalculates conflict risks after reducer updates. The detector consider
 Phase 8 adds a Git adapter boundary under `src/lib/github`. The mock UI sends commit and pull request payloads, the adapter converts them to typed `LiveSprintEvent` objects, and the reducer updates commits, pull requests, linked task files/status, activity, and derived conflict risk. A real webhook handler can later replace the mock source by producing the same events.
 
 Phase 9 hardens the existing architecture rather than adding major features. Command adapters now reject invalid task titles, assignees, file paths, Git payloads, and timer durations before events enter the reducer. Seed data now demonstrates board state, presence, activity, timer, conflict risk, and Git activity immediately after startup.
+
+Dashboard routes are configured under `src/lib/dashboards/config.ts` and exposed through `GET /api/dashboards` and `GET /api/dashboards/:dashboardId`. The `/` page and `/dashboard/main` show large dashboard cards that route into `/dashboard/sprint-board`, `/dashboard/activity`, `/dashboard/conflicts`, `/dashboard/github`, and `/dashboard/timer`; realtime session state remains Socket.IO-based.
 
 ## Merge-Conflict Risk Detection Strategy
 
@@ -263,6 +268,7 @@ Realtime command-adapter tests cover display-name normalization, joined-user cre
 
 - In-memory state keeps the MVP focused but means sessions reset when the server restarts.
 - The custom Socket.IO server is practical for the MVP but will need deployment-specific handling later.
+- Dashboard configuration is static metadata for now; it does not include permissions or user-specific layout persistence.
 - Reconnect does not restore user identity automatically yet.
 - Mock GitHub events provide demo speed but do not prove webhook security or delivery handling yet.
 - A single authoritative session manager is simpler than distributed persistence and is appropriate for the first real-time prototype.

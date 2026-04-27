@@ -6,4 +6,6 @@ export type DashboardModuleStatus = {
   value: string;
   detail: string;
   tone: DashboardStatusTone;
+  href?: string;
+  cta?: string;
 };

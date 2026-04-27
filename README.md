@@ -21,7 +21,11 @@ This makes the project useful as a portfolio piece for real-time systems, event-
 - Realtime join flow and presence
 - Server-authoritative sprint session state
 - Five-column sprint board: TODO, ACTIVE, BLOCKED, REVIEW, DONE
+- Horizontal kanban layout with readable task cards and usable controls
 - Task creation, assignment, editing, status changes, blocking, review, completion
+- Card-based operations landing page at `/`
+- Route-specific dashboards for board, activity, conflicts, Git, and timer views
+- REST dashboard metadata API
 - Related file paths on tasks
 - First-class activity feed with typed filters
 - Shared sprint phase timer for PLANNING, CODING, REVIEW, and RETRO
@@ -66,6 +70,7 @@ server.ts                         Custom Next + Socket.IO server
 src/lib/types                     Shared domain types
 src/lib/events                    Typed event model and activity formatting
 src/lib/realtime                  Socket protocol, command adapters, client hook
+src/lib/dashboards                Dashboard route/API configuration
 src/lib/session                   Pure reducer and session helpers
 src/lib/conflicts                 Merge-conflict risk detection
 src/lib/github                    Mock GitHub adapter boundary
@@ -75,6 +80,39 @@ src/components                    Dashboard panels and workflow UI
 ```
 
 Socket.IO was chosen over raw WebSockets for acknowledgements, reconnect behavior, and named event channels. The tradeoff is that the realtime app runs through `tsx server.ts` instead of a purely serverless Next target.
+
+## Dashboard Landing, Routes, and API
+
+The root page `/` is the operations dashboard landing page. It shows large product cards for the main operations view, sprint board, activity timeline, conflict risk, mock GitHub events, sprint timer, and presence. Those cards are the primary navigation and link into focused dashboard routes.
+
+Focused dashboard routes are backed by a small REST configuration layer:
+
+```text
+/dashboard/main
+/dashboard/sprint-board
+/dashboard/activity
+/dashboard/conflicts
+/dashboard/github
+/dashboard/timer
+```
+
+Dashboard metadata is available from:
+
+```text
+GET /api/dashboards
+GET /api/dashboards/:dashboardId
+```
+
+Each dashboard config returns:
+
+- `id`
+- `title`
+- `description`
+- `sections`
+
+The frontend loads the active dashboard config through the API route, then renders the matching dashboard sections while realtime sprint state continues to come from Socket.IO.
+
+Focused dashboard pages use a subtle back link to `/dashboard/main` instead of a primary tab menu. The main navigation surface is the card grid on `/` and `/dashboard/main`.
 
 ## Real-Time Event Flow
 
@@ -142,6 +180,14 @@ http://localhost:3000
 
 `npm run dev` runs the custom Next server with Socket.IO attached. `npm run dev:next` runs plain Next.js without the realtime Socket.IO layer.
 
+The custom server binds to `0.0.0.0` when needed, but prints user-facing URLs in the familiar local/network format:
+
+```text
+LiveSprint realtime server ready
+- Local:   http://localhost:3000
+- Network: http://<lan-ip>:3000
+```
+
 ## Scripts
 
 ```bash
@@ -182,21 +228,25 @@ The suite focuses on pure logic and command boundaries:
 - Git event reducer integration
 - Activity event formatting
 - Input validation for task, timer, file path, and Git payloads
+- Dashboard configuration routes
 
 ## Demo Script
 
 1. Run `npm run dev`.
 2. Open `http://localhost:3000` in two browser tabs.
 3. Join with two different display names.
-4. Confirm both users appear in Presence.
-5. Create a task with related files such as `src/lib/session/index.ts`.
-6. Assign the task and move it to ACTIVE.
-7. Start, pause, reset, or change the phase timer in one tab and watch the other tab sync.
-8. Use the Activity Feed filters to inspect task, user, timer, Git, and conflict events.
-9. In Mock GitHub Events, simulate a commit touching a file already used by an ACTIVE task.
-10. Confirm the linked task, activity feed, and Conflict Risk panel update in both tabs.
-11. Simulate PR opened to move a task to REVIEW.
-12. Simulate PR merged to move a task to DONE and resolve or downgrade risk.
+4. Use the large dashboard cards on `/` to open `/dashboard/sprint-board` in one tab and `/dashboard/conflicts` in the other.
+5. Confirm both users appear in Presence.
+6. Create a task with related files such as `src/lib/session/index.ts`.
+7. Assign the task and move it to ACTIVE with the Start button or status select.
+8. Edit the task title, description, and related files from the inline edit form.
+9. Move the task through REVIEW, BLOCKED, and DONE.
+10. Start, pause, reset, or change the phase timer in one tab and watch the other tab sync.
+11. Use the Activity Feed filters to inspect task, user, timer, Git, and conflict events.
+12. In Mock GitHub Events, simulate a commit touching a file already used by an ACTIVE task.
+13. Confirm the linked task, activity feed, and Conflict Risk panel update in both tabs.
+14. Simulate PR opened to move a task to REVIEW.
+15. Simulate PR merged to move a task to DONE and resolve or downgrade risk.
 
 ## Validation
 

@@ -29,13 +29,27 @@ npm run check
 - Mock GitHub commit and pull request event adaptation
 - Git event reducer integration with task files, task status, activity, and conflict risk
 - File path validation
+- Dashboard metadata configuration
 
 ## Manual Realtime Check
 
 1. Run `npm run dev`.
 2. Open two tabs at `http://localhost:3000`.
 3. Join both tabs.
-4. Change a task, timer, or Git event in one tab.
-5. Confirm the other tab updates without refresh.
+4. Use the large cards on `/` to visit `/dashboard/sprint-board`, `/dashboard/conflicts`, and `/dashboard/github`.
+5. Create, assign, edit, start, review, block, and complete a task.
+6. Change a timer or Git event in one tab.
+7. Confirm the other tab updates without refresh.
+
+## REST Dashboard API Check
+
+With `npm run dev` running:
+
+```bash
+curl http://localhost:3000/api/dashboards
+curl http://localhost:3000/api/dashboards/sprint-board
+```
+
+The response should include dashboard `id`, `title`, `description`, and `sections`.
 
 This is the right level for the MVP. Browser automation can be added later once the product surface stabilizes further.

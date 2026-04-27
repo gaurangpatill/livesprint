@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
 import next from "next";
 import { Server } from "socket.io";
 import type { LiveSprintEvent } from "./src/lib/events";
@@ -72,6 +73,20 @@ function acknowledgeError(
   error: unknown,
 ) {
   ack?.({ ok: false, error: getErrorMessage(error) });
+}
+
+function getLanIpAddress() {
+  const interfaces = networkInterfaces();
+
+  for (const entries of Object.values(interfaces)) {
+    for (const entry of entries ?? []) {
+      if (entry.family === "IPv4" && !entry.internal) {
+        return entry.address;
+      }
+    }
+  }
+
+  return "localhost";
 }
 
 async function main() {
@@ -393,7 +408,13 @@ async function main() {
   });
 
   httpServer.listen(port, hostname, () => {
-    console.log(`LiveSprint realtime server ready on http://${hostname}:${port}`);
+    const localUrl = `http://localhost:${port}`;
+    const networkUrl = `http://${getLanIpAddress()}:${port}`;
+
+    console.log("");
+    console.log("LiveSprint realtime server ready");
+    console.log(`- Local:   ${localUrl}`);
+    console.log(`- Network: ${networkUrl}`);
   });
 }
 

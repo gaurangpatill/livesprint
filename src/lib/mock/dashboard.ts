@@ -14,11 +14,23 @@ export function getDashboardModules(
 
   return [
     {
+      title: "LiveSprint Operations",
+      label: "Main",
+      value: "Overview",
+      detail:
+        "Open the full command center with board, presence, timer, activity, conflict risk, and Git events.",
+      tone: "ready",
+      href: "/dashboard/main",
+      cta: "Open operations dashboard",
+    },
+    {
       title: "Sprint Board",
       label: "Board",
       value: `${session.tasks.length} tasks`,
       detail: `${activeTasks.length} tasks are currently active or in review.`,
       tone: "ready",
+      href: "/dashboard/sprint-board",
+      cta: "Open sprint board",
     },
     {
       title: "Presence",
@@ -26,13 +38,17 @@ export function getDashboardModules(
       value: `${onlineUsers.length}/${session.users.length} online`,
       detail: "Joined users, disconnects, and current focus update live.",
       tone: "ready",
+      href: "/dashboard/main",
+      cta: "Open team view",
     },
     {
-      title: "Activity Feed",
+      title: "Activity Timeline",
       label: "Events",
       value: `${session.activity.length} events`,
       detail: "Every accepted command becomes a typed, readable event.",
       tone: "ready",
+      href: "/dashboard/activity",
+      cta: "Open activity timeline",
     },
     {
       title: "Sprint Timer",
@@ -40,6 +56,8 @@ export function getDashboardModules(
       value: session.phase,
       detail: `${Math.ceil(session.timer.remainingSeconds / 60)} minutes remain in the shared phase timer.`,
       tone: session.timer.isRunning ? "ready" : "pending",
+      href: "/dashboard/timer",
+      cta: "Open sprint timer",
     },
     {
       title: "Conflict Risk",
@@ -54,6 +72,8 @@ export function getDashboardModules(
           : highestRisk?.level === "MEDIUM"
             ? "warning"
             : "ready",
+      href: "/dashboard/conflicts",
+      cta: "Open conflict dashboard",
     },
     {
       title: "Mock GitHub Events",
@@ -61,6 +81,8 @@ export function getDashboardModules(
       value: `${session.commits.length + session.pullRequests.length} events`,
       detail: "Mock commits and pull requests flow through the same reducer.",
       tone: "ready",
+      href: "/dashboard/github",
+      cta: "Open Git events",
     },
   ];
 }
