@@ -33,14 +33,14 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 2 now adds the core domain model, typed event union, seed sprint session, and centralized reducer that can later sit behind a WebSocket server.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 3 now runs a custom Next.js server with Socket.IO attached so the existing reducer can drive server-authoritative collaboration.
 
 The target architecture will use:
 
 - Next.js for the frontend application and route structure
 - TypeScript shared models for sprint state, users, tasks, activity, commits, and risk
 - A centralized event reducer/session state manager implemented as a pure function
-- A WebSocket server or equivalent real-time layer for synchronized sessions
+- Socket.IO realtime transport for synchronized sessions
 - In-memory authoritative state for the MVP
 - Mock GitHub-style events before real webhooks
 - Unit tests for event handling and merge-conflict risk logic
@@ -92,6 +92,8 @@ Status: implemented with local seed data and Vitest reducer tests. State is not 
 - Users can join sprint session
 - Presence updates live
 - Late joiners receive authoritative current state
+
+Status: implemented with a Socket.IO custom server, one in-memory authoritative session, live join/leave presence, session snapshots, and live task assignment/status commands.
 
 ### Phase 4: Live sprint board
 
@@ -164,6 +166,8 @@ This keeps synchronization explicit and testable.
 
 Phase 2 implements the reducer boundary but not the network transport. The reducer accepts current `SprintSession` state and a typed `LiveSprintEvent`, then returns a new session state without mutating the original.
 
+Phase 3 implements the transport with Socket.IO in `server.ts`. Clients use `useLiveSprintSession`, receive a current snapshot, send typed task commands, and receive updated session state after the server applies the reducer. Socket.IO was chosen for acknowledgements and reconnection support; the tradeoff is that the app now runs through a custom Next server for realtime mode.
+
 ## Merge-Conflict Risk Detection Strategy
 
 Conflict risk will be derived from active task file paths and mock commit file changes.
@@ -218,9 +222,13 @@ UI tests can be added after the live workflows stabilize. The MVP should maintai
 
 Current tests cover task creation, task status updates, assignment, phase changes, timer transitions, and reducer immutability.
 
+Realtime command-adapter tests cover display-name normalization, joined-user creation, task-status command mapping, and rejecting task commands before a user joins.
+
 ## Known Tradeoffs
 
 - In-memory state keeps the MVP focused but means sessions reset when the server restarts.
+- The custom Socket.IO server is practical for the MVP but will need deployment-specific handling later.
+- Reconnect does not restore user identity automatically yet.
 - Mock GitHub events provide demo speed but do not prove webhook security or delivery handling yet.
 - A single authoritative session manager is simpler than distributed persistence and is appropriate for the first real-time prototype.
 - Authentication is deferred to avoid obscuring the core real-time coordination problem.

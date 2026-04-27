@@ -12,13 +12,34 @@ const visibleStatuses: TaskStatus[] = [
 
 type SprintBoardProps = {
   session: SprintSession;
+  canEdit?: boolean;
+  onAssignTask?: (taskId: string, assigneeId: string) => Promise<void>;
+  onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => Promise<void>;
+  onBlockTask?: (taskId: string) => Promise<void>;
+  onCompleteTask?: (taskId: string) => Promise<void>;
 };
 
 function getUserName(users: SprintUser[], userId?: string) {
   return users.find((user) => user.id === userId)?.name ?? "Unassigned";
 }
 
-function TaskCard({ task, users }: { task: SprintTask; users: SprintUser[] }) {
+function TaskCard({
+  task,
+  users,
+  canEdit,
+  onAssignTask,
+  onUpdateTaskStatus,
+  onBlockTask,
+  onCompleteTask,
+}: {
+  task: SprintTask;
+  users: SprintUser[];
+  canEdit?: boolean;
+  onAssignTask?: (taskId: string, assigneeId: string) => Promise<void>;
+  onUpdateTaskStatus?: (taskId: string, status: TaskStatus) => Promise<void>;
+  onBlockTask?: (taskId: string) => Promise<void>;
+  onCompleteTask?: (taskId: string) => Promise<void>;
+}) {
   return (
     <article className="rounded-lg border border-white/10 bg-[#11131b] p-4">
       <div className="flex items-start justify-between gap-3">
@@ -49,11 +70,86 @@ function TaskCard({ task, users }: { task: SprintTask; users: SprintUser[] }) {
           ) : null}
         </div>
       ) : null}
+      <div className="mt-4 grid gap-2">
+        <select
+          aria-label={`Assign ${task.title}`}
+          className="h-9 rounded border border-white/10 bg-black/30 px-2 text-xs text-zinc-200 outline-none transition focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!canEdit}
+          value={task.assigneeId ?? ""}
+          onChange={(event) => {
+            if (event.target.value) {
+              void onAssignTask?.(task.id, event.target.value).catch(() => {
+                // The realtime hook owns the user-facing error state.
+              });
+            }
+          }}
+        >
+          <option value="">Unassigned</option>
+          {users.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label={`Update status for ${task.title}`}
+          className="h-9 rounded border border-white/10 bg-black/30 px-2 text-xs text-zinc-200 outline-none transition focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!canEdit}
+          value={task.status}
+          onChange={(event) => {
+            void onUpdateTaskStatus?.(
+              task.id,
+              event.target.value as TaskStatus,
+            ).catch(() => {
+              // The realtime hook owns the user-facing error state.
+            });
+          }}
+        >
+          {visibleStatuses.map((status) => (
+            <option key={status} value={status}>
+              {formatTaskStatus(status)}
+            </option>
+          ))}
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            className="h-9 rounded border border-amber-400/30 bg-amber-400/8 text-xs font-medium text-amber-100 transition hover:bg-amber-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!canEdit || task.status === "BLOCKED"}
+            type="button"
+            onClick={() =>
+              void onBlockTask?.(task.id).catch(() => {
+                // The realtime hook owns the user-facing error state.
+              })
+            }
+          >
+            Block
+          </button>
+          <button
+            className="h-9 rounded border border-emerald-400/30 bg-emerald-400/8 text-xs font-medium text-emerald-100 transition hover:bg-emerald-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={!canEdit || task.status === "DONE"}
+            type="button"
+            onClick={() =>
+              void onCompleteTask?.(task.id).catch(() => {
+                // The realtime hook owns the user-facing error state.
+              })
+            }
+          >
+            Done
+          </button>
+        </div>
+      </div>
     </article>
   );
 }
 
-export function SprintBoard({ session }: SprintBoardProps) {
+export function SprintBoard({
+  session,
+  canEdit,
+  onAssignTask,
+  onUpdateTaskStatus,
+  onBlockTask,
+  onCompleteTask,
+}: SprintBoardProps) {
   const tasksByStatus = getTasksByStatus(session);
 
   return (
@@ -88,7 +184,16 @@ export function SprintBoard({ session }: SprintBoardProps) {
             </div>
             <div className="mt-3 space-y-3">
               {tasksByStatus[status].map((task) => (
-                <TaskCard key={task.id} task={task} users={session.users} />
+                <TaskCard
+                  canEdit={canEdit}
+                  key={task.id}
+                  onAssignTask={onAssignTask}
+                  onBlockTask={onBlockTask}
+                  onCompleteTask={onCompleteTask}
+                  onUpdateTaskStatus={onUpdateTaskStatus}
+                  task={task}
+                  users={session.users}
+                />
               ))}
               {tasksByStatus[status].length === 0 ? (
                 <p className="rounded-lg border border-dashed border-white/10 p-4 text-xs text-zinc-500">
