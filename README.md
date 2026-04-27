@@ -1,61 +1,126 @@
 # LiveSprint
 
-LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
+LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is not a Jira clone. It is a coordination engine that synchronizes sprint tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk while work is happening.
 
-This repository is currently at Phase 8: mock GitHub events. Real GitHub auth/webhooks, persistence, and authentication are intentionally not implemented yet.
+The project is currently demo-ready through Phase 9. It uses a server-authoritative in-memory session, Socket.IO, typed events, a pure reducer, mock GitHub events, conflict-risk detection, and a polished dashboard UI.
 
-## Current Status
+## Why LiveSprint Exists
 
-Implemented:
+Most sprint tools are systems of record. They tell a team what was planned or what someone updated manually. LiveSprint models the sprint as a live distributed system:
 
-- Next.js App Router application
-- TypeScript
-- Tailwind CSS
-- Polished dashboard shell
-- Session-backed modules for Sprint Board, Presence, Activity Feed, Sprint Timer, Conflict Risk, and Mock GitHub Events
-- Initial project structure for future sprint, activity, conflict, GitHub, timer, event, session, and mock modules
-- Core sprint domain types
-- Typed `LiveSprintEvent` model
-- Pure session reducer/state manager
-- Realistic seed sprint session
-- Socket.IO realtime session transport
-- Join flow with display names
-- Live presence updates
-- Live task creation, editing, assignment, and status updates
+- Developers join a shared session.
+- Every meaningful action becomes a typed event.
+- The server reduces events into authoritative state.
+- All connected clients receive the same session state.
+- File-path overlap is surfaced before it becomes merge pain.
+
+This makes the project useful as a portfolio piece for real-time systems, event-driven architecture, TypeScript modeling, and developer workflow tooling.
+
+## Key Features
+
+- Realtime join flow and presence
+- Server-authoritative sprint session state
 - Five-column sprint board: TODO, ACTIVE, BLOCKED, REVIEW, DONE
-- Related file path editing on tasks
-- First-class live activity timeline with event filters
-- Shared event formatter for human-readable activity messages
-- Server-authoritative sprint phase timer with start, pause, reset, phase change, and duration control
-- Real-time merge-conflict risk detection from active task file paths
-- Conflict risk panel with LOW, MEDIUM, and HIGH risk explanations
-- Mock GitHub commit and pull request event simulator
-- Git events update linked task files, task status, activity, and conflict risk
-- Vitest reducer and command-adapter tests
-- Project plan in `PLAN.md`
-
-Not implemented yet:
-
-- Real GitHub auth/webhooks
-- Persistence
-- Authentication
+- Task creation, assignment, editing, status changes, blocking, review, completion
+- Related file paths on tasks
+- First-class activity feed with typed filters
+- Shared sprint phase timer for PLANNING, CODING, REVIEW, and RETRO
+- Merge-conflict risk detection from active task file paths
+- Mock GitHub commits and pull requests
+- Git events update linked tasks, activity, and conflict risk
+- Focused Vitest coverage for reducers, commands, timer logic, conflict logic, Git events, and formatters
 
 ## Tech Stack
 
-- Next.js
+- Next.js App Router
+- React
 - TypeScript
 - Tailwind CSS
-- React
-- Node.js runtime through Next.js
 - Socket.IO
+- Node.js custom server
+- Vitest
+- ESLint
 
-Planned later:
+No authentication, persistence, billing, organizations, or admin panels are included in the MVP.
 
-- Unit tests for reducer and conflict detection
-- Optional Prisma/PostgreSQL after the real-time MVP works
-- Real GitHub webhooks after mock events prove the workflow
+## Architecture Overview
 
-## Getting Started
+LiveSprint uses one in-memory authoritative `SprintSession` owned by `server.ts`.
+
+```text
+Browser UI
+  -> useLiveSprintSession hook
+  -> Socket.IO command
+  -> server command adapter
+  -> typed LiveSprintEvent
+  -> pure session reducer
+  -> conflict risk recalculation
+  -> Socket.IO broadcast
+  -> all browser tabs render the updated session
+```
+
+Important modules:
+
+```text
+server.ts                         Custom Next + Socket.IO server
+src/lib/types                     Shared domain types
+src/lib/events                    Typed event model and activity formatting
+src/lib/realtime                  Socket protocol, command adapters, client hook
+src/lib/session                   Pure reducer and session helpers
+src/lib/conflicts                 Merge-conflict risk detection
+src/lib/github                    Mock GitHub adapter boundary
+src/lib/timer                     Pure shared timer logic
+src/lib/mock                      Demo session data
+src/components                    Dashboard panels and workflow UI
+```
+
+Socket.IO was chosen over raw WebSockets for acknowledgements, reconnect behavior, and named event channels. The tradeoff is that the realtime app runs through `tsx server.ts` instead of a purely serverless Next target.
+
+## Real-Time Event Flow
+
+Clients never mutate sprint state directly. They send typed commands such as `task:create`, `task:update-status`, `timer:start`, or `github:commit`.
+
+The server:
+
+1. Validates the command payload.
+2. Converts the command into a typed `LiveSprintEvent`.
+3. Applies the event with `reduceSprintSession`.
+4. Recalculates derived conflict risk.
+5. Appends activity events.
+6. Broadcasts the updated session to every connected client.
+
+Late joiners receive the current authoritative session snapshot immediately after connecting.
+
+## Merge-Conflict Risk Detection
+
+Conflict risk is a soft warning system based on active tasks and related file paths.
+
+- `LOW`: one active task touches a file
+- `MEDIUM`: multiple active tasks touch files in the same directory or module
+- `HIGH`: multiple active tasks touch the exact same file
+
+Each risk includes affected path, involved tasks, involved users, explanation, and suggested action. New MEDIUM/HIGH risks emit `conflict.risk_detected` activity without spamming duplicate unchanged risks.
+
+Limitations: this does not inspect Git branches, diffs, merge bases, generated code, or semantic conflicts. It predicts coordination risk from declared file-level activity.
+
+## Mock GitHub Event Flow
+
+The mock GitHub panel simulates:
+
+- Commit pushed
+- Pull request opened
+- Pull request merged
+
+Mock events are adapted in `src/lib/github/mock-events.ts`. That boundary is intentional: a future webhook route can replace the mock source by producing the same typed events.
+
+Current behavior:
+
+- `commit.linked` stores a commit and merges changed files into the linked task.
+- `pull_request.opened` stores a PR, merges changed files, and moves the task to REVIEW.
+- `pull_request.merged` stores a PR, merges changed files, and moves the task to DONE.
+- Every Git event updates the activity feed and reruns conflict detection.
+
+## Setup
 
 Install dependencies:
 
@@ -63,19 +128,19 @@ Install dependencies:
 npm install
 ```
 
-Run the development server:
+Run the realtime development server:
 
 ```bash
 npm run dev
 ```
 
-`npm run dev` runs a custom Next.js server with Socket.IO attached. Use `npm run dev:next` only when you intentionally want the plain Next.js server without realtime collaboration.
-
-Open the app:
+Open:
 
 ```text
 http://localhost:3000
 ```
+
+`npm run dev` runs the custom Next server with Socket.IO attached. `npm run dev:next` runs plain Next.js without the realtime Socket.IO layer.
 
 ## Scripts
 
@@ -91,191 +156,88 @@ npm run typecheck
 npm run check
 ```
 
-## Project Structure
+## Testing
 
-```text
-src/app
-src/components/dashboard
-src/components/sprint
-src/components/activity
-src/components/conflicts
-src/components/github
-src/components/timer
-src/lib/types
-src/lib/events
-src/lib/realtime
-src/lib/session
-src/lib/conflicts
-src/lib/mock
+Run the unit tests:
+
+```bash
+npm run test
 ```
 
-## Phase 1 Demo Flow
+Run the full local quality gate:
 
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000`.
-3. Review the dashboard shell and placeholder modules.
-4. Review `PLAN.md` for the product and architecture direction.
+```bash
+npm run check
+npm run build
+```
 
-## Phase 2 Demo Flow
+The suite focuses on pure logic and command boundaries:
 
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000`.
-3. Review the session-backed sprint board, presence panel, timer panel, activity feed, risk panel, and commit panel.
-4. Run `npm run test` to verify reducer behavior.
+- Session reducer behavior
+- Reducer immutability
+- Timer transitions and remaining-time calculation
+- Conflict-risk detection
+- Duplicate significant risk prevention
+- Mock GitHub event adaptation
+- Git event reducer integration
+- Activity event formatting
+- Input validation for task, timer, file path, and Git payloads
 
-## Phase 3 Demo Flow
+## Demo Script
 
-1. Start the app with `npm run dev`.
+1. Run `npm run dev`.
 2. Open `http://localhost:3000` in two browser tabs.
-3. Enter a different display name in each tab and join the sprint.
-4. Confirm both names appear in the Presence panel.
-5. Assign a task or change a task status in one tab.
-6. Confirm the task board and activity feed update in both tabs.
-7. Close one tab and confirm that user is marked offline in the remaining tab.
+3. Join with two different display names.
+4. Confirm both users appear in Presence.
+5. Create a task with related files such as `src/lib/session/index.ts`.
+6. Assign the task and move it to ACTIVE.
+7. Start, pause, reset, or change the phase timer in one tab and watch the other tab sync.
+8. Use the Activity Feed filters to inspect task, user, timer, Git, and conflict events.
+9. In Mock GitHub Events, simulate a commit touching a file already used by an ACTIVE task.
+10. Confirm the linked task, activity feed, and Conflict Risk panel update in both tabs.
+11. Simulate PR opened to move a task to REVIEW.
+12. Simulate PR merged to move a task to DONE and resolve or downgrade risk.
 
-## Phase 4 Demo Flow
+## Validation
 
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000` in two browser tabs.
-3. Join with a different display name in each tab.
-4. Create a task with a title, optional description, assignee, and related file paths.
-5. Confirm the new task appears in both tabs under TODO.
-6. Assign the task, move it to ACTIVE, mark it BLOCKED, move it to REVIEW, then mark it DONE.
-7. Confirm every task change updates the board and activity feed in both tabs without refresh.
+The realtime command adapters reject practical invalid input:
 
-## Phase 5 Demo Flow
-
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000` in two browser tabs.
-3. Join with different display names.
-4. Create, assign, edit, block, review, and complete tasks.
-5. Watch the Activity Feed update in both tabs with actor, timestamp, type badge, and readable message.
-6. Use the feed filters: All, Tasks, Users, Timer/Phase, Git, and Conflicts.
-
-## Phase 6 Demo Flow
-
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000` in two browser tabs.
-3. Join with different display names.
-4. Start, pause, reset, or change the timer phase in one tab.
-5. Confirm the other tab receives the same phase and countdown state.
-6. Join from a third tab after the timer is already running and confirm it receives the current authoritative timer snapshot.
-
-## Phase 7 Demo Flow
-
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000` in two browser tabs and join with different names.
-3. Create two tasks with related file paths in the same directory, for example `src/lib/session/a.ts` and `src/lib/session/b.ts`.
-4. Move both tasks to ACTIVE and confirm a MEDIUM risk appears in both tabs.
-5. Edit one task so both tasks touch the exact same file, for example `src/lib/session/index.ts`.
-6. Confirm the risk upgrades to HIGH and a conflict event appears in the Activity Feed.
-7. Move one task to DONE and confirm the risk disappears or downgrades.
-
-## Phase 8 Demo Flow
-
-1. Start the app with `npm run dev`.
-2. Open `http://localhost:3000` in two browser tabs and join with different names.
-3. Select a task in the Mock GitHub Events panel.
-4. Simulate a commit with changed files and confirm the linked task receives those related files.
-5. Simulate a PR opened and confirm the task moves to REVIEW.
-6. Simulate a PR merged and confirm the task moves to DONE.
-7. Use changed files that overlap with another ACTIVE task to see conflict risk update live.
-
-## Architecture Direction
-
-The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
-
-Phase 2 implemented the reducer side of that architecture locally:
-
-- `src/lib/types` contains shared domain types.
-- `src/lib/events` contains the typed event union.
-- `src/lib/session` contains the pure reducer and session helpers.
-- `src/lib/mock/session.ts` contains the seed sprint session rendered by the dashboard.
-
-Phase 3 adds a custom server in `server.ts` using Socket.IO:
-
-- The server owns one in-memory `SprintSession`.
-- Clients connect through `useLiveSprintSession`.
-- Clients send typed commands such as `task:create`, `task:update`, `task:assign`, and `task:update-status`.
-- The server validates command payloads in `src/lib/realtime/commands.ts`.
-- The server converts commands to `LiveSprintEvent` objects.
-- The existing reducer applies events and appends activity feed entries.
-- The server broadcasts updated session state to every connected client.
-
-Socket.IO was chosen over hand-rolled WebSocket handling because this Next.js App Router project benefits from built-in reconnection, acknowledgements, and typed event channels. The tradeoff is a custom Next server, so deployments must run `server.ts` rather than a purely static or serverless Next target.
-
-Phase 4 expands the task flow:
-
-- The sprint board groups tasks into TODO, ACTIVE, BLOCKED, REVIEW, and DONE columns.
-- Task creation emits `task.created`.
-- Title, description, assignee, and related file edits emit `task.updated` or `task.assigned`.
-- Starting work emits `task.started`.
-- Blocking work emits `task.blocked`.
-- Review handoff emits `task.review_requested`.
-- Completion emits `task.completed`.
-
-Every task event includes `actorId` and a server timestamp, is reduced on the server, and appears in the activity feed in real time.
-
-Phase 5 makes the activity feed a first-class event stream:
-
-- `src/lib/events/formatters.ts` converts typed `LiveSprintEvent` objects into readable activity messages.
-- The reducer uses the shared formatter before appending activity entries.
-- The UI renders reverse chronological events with actor context, timestamps, typed badges, and category markers.
-- Lightweight filters group events into Tasks, Users, Timer/Phase, Git, and Conflicts.
-- Git and conflict filters are ready for future phases; they show matching placeholder events when those typed events are emitted.
-
-Phase 6 adds a synchronized sprint timer:
-
-- `src/lib/timer` contains pure timer logic for start, pause, reset, phase changes, and remaining-time calculation.
-- Clients send `timer:start`, `timer:pause`, `timer:reset`, and `phase:change` commands.
-- The server materializes the current timer before applying new events, then broadcasts the accepted session state.
-- Late joiners receive a snapshot with the current authoritative timer.
-- Clients derive the visible countdown locally from the synchronized `startedAt`, `remainingSeconds`, and `updatedAt` fields.
-- Timer and phase events appear in the activity feed through `timer.started`, `timer.paused`, `timer.reset`, and `phase.changed`.
-
-Phase 7 adds merge-conflict risk detection:
-
-- `src/lib/conflicts` contains pure file-path risk detection.
-- Only ACTIVE tasks are considered for conflict risk.
-- LOW means one active task is touching a file.
-- MEDIUM means multiple active tasks are touching files in the same directory/module.
-- HIGH means multiple active tasks are touching the exact same file.
-- Conflict risks are derived after reducer updates, stored on the session, and broadcast to every connected client.
-- New MEDIUM/HIGH risks append `conflict.risk_detected` activity entries, while unchanged risks do not spam the feed.
-- This is a soft warning system based on declared file paths, not a merge blocker or a guarantee of actual Git conflicts.
-
-Phase 8 adds mock GitHub events:
-
-- `src/lib/github/mock-events.ts` adapts mock UI payloads into typed `LiveSprintEvent` objects.
-- Commit simulation emits `commit.linked`, stores the commit, and merges changed files into the linked task.
-- PR opened emits `pull_request.opened`, stores the PR, merges changed files into the linked task, and moves the task to REVIEW.
-- PR merged emits `pull_request.merged`, stores the PR, merges changed files into the linked task, and moves the task to DONE.
-- Git events flow through the same reducer, activity feed, conflict detector, and Socket.IO broadcast path as manual sprint actions.
-- A real GitHub webhook handler can later replace the mock source by producing the same typed events.
-
-Conflict risk is derived from active task file paths and mock Git file changes:
-
-- `LOW`: one active task touches a file
-- `MEDIUM`: multiple active tasks touch files in the same directory or module
-- `HIGH`: multiple active tasks touch the exact same file
-
-Mock GitHub events are typed event inputs first, so real webhook ingestion can replace the mock source later.
+- Empty task titles
+- Unknown assignees
+- Invalid repo-relative file paths
+- Git events without changed files
+- Empty commit messages or PR titles
+- Timer durations outside 1 to 240 minutes
+- Commands sent before joining the session
 
 ## Current Limitations
 
-- Session state is in memory and resets when the server restarts.
+- Session state is in memory and resets on server restart.
 - There is one shared sprint session.
-- Reconnect does not restore identity automatically; the user can join again.
-- Timer countdown is synchronized from server events and locally displayed between events; there is no separate per-second server broadcast.
-- There is no authentication or authorization.
-- Conflict detection uses task related file paths, including files added by mock commit and PR events.
-- Risk is heuristic and file-level; it does not inspect ASTs, diffs, branches, or actual Git merge bases yet.
-- GitHub events are mocked locally and do not validate repository access, webhook signatures, branch state, or real PR numbers yet.
+- Reconnect does not restore the same user identity automatically.
+- There is no persistence or replayable event log yet.
+- Mock GitHub events do not prove webhook security, delivery, retries, or signatures.
+- Conflict detection is file-path based and intentionally advisory.
+- Deployment needs a host that supports the custom Node/Socket.IO server.
+
+## Future Work
+
+- Real GitHub webhook ingestion
+- GitHub OAuth and repository linking
+- PostgreSQL/Prisma persistence
+- Replayable event log
+- Multi-session support
+- Reconnect identity recovery
+- Role-based permissions
+- Deployment-ready WebSocket infrastructure
+- Screenshots and short demo video
 
 ## Screenshots
 
-Screenshots will be added after the dashboard begins showing live session data.
+Screenshots placeholder:
 
-## Roadmap
-
-See `PLAN.md` for the phased implementation plan.
+- Dashboard overview
+- Live task board with two users
+- Activity feed filters
+- Conflict Risk panel showing HIGH risk
+- Mock GitHub event panel

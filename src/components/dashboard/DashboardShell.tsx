@@ -57,12 +57,12 @@ export function DashboardShell() {
               LiveSprint
             </p>
             <h1 className="mt-4 text-4xl font-semibold tracking-normal text-white sm:text-5xl">
-              Server-authoritative sprint state, live across clients.
+              Realtime sprint orchestration for engineering teams.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400">
-              Phase 4 turns the sprint board into a fully interactive shared
-              task system with server-authoritative creation, edits, and flow
-              changes.
+              LiveSprint coordinates tasks, presence, phase timing, Git-style
+              events, and merge-conflict risk through one server-authoritative
+              event stream.
             </p>
           </div>
 
@@ -198,19 +198,19 @@ export function DashboardShell() {
                     Session
                   </p>
                   <h2 className="mt-3 text-lg font-semibold text-white">
-                    MVP Readiness
+                    Demo Readiness
                   </h2>
                 </div>
                 <span className="rounded-full border border-cyan-500/30 bg-cyan-500/8 px-3 py-1 text-xs font-medium text-cyan-200">
-                  Foundation
+                  Phase 9
                 </span>
               </div>
               <div className="mt-6 space-y-3">
                 {[
-                  "Core sprint domain types",
-                  "Typed event model",
-                  "Pure session reducer",
-                  "Live sprint board",
+                  "Realtime task flow",
+                  "Shared phase timer",
+                  "Conflict-risk detection",
+                  "Mock GitHub event adapter",
                 ].map((item) => (
                   <div
                     className="flex items-center justify-between border-b border-white/8 pb-3 text-sm last:border-b-0 last:pb-0"

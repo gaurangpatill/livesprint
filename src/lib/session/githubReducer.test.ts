@@ -46,7 +46,7 @@ describe("GitHub event reducer integration", () => {
 
     const next = reduceSprintSession(session, event);
 
-    expect(next.pullRequests).toHaveLength(1);
+    expect(next.pullRequests).toHaveLength(session.pullRequests.length + 1);
     expect(next.tasks.find((task) => task.id === "task-live-board")?.status).toBe(
       "IN_REVIEW",
     );

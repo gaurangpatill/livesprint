@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 8 now routes mock GitHub commit and pull request events through the same event-driven realtime architecture.
+The MVP is a Next.js App Router application with TypeScript, Tailwind CSS, Socket.IO, a custom Node server, and one server-authoritative in-memory sprint session. Through Phase 9, LiveSprint has a demo-ready dashboard, typed event model, pure reducer, live task flow, shared timer, conflict-risk detection, mock GitHub events, validation, tests, and recruiter-ready documentation.
 
 The target architecture will use:
 
@@ -143,6 +143,8 @@ Status: implemented with a mock GitHub adapter, commit/PR simulator UI, typed `c
 - Unit tests for conflict detection and event reducer
 - README with architecture, setup, demo flow, and screenshots placeholder
 
+Status: implemented with dashboard copy/empty-state polish, stronger seed data, practical task/Git/file/timer validation, additional tests, and refreshed README plus architecture/demo/testing docs.
+
 ## Data Model
 
 The core domain model centers on a `SprintSession` containing users, tasks, activity, sprint phase/timer state, commit events, and conflict risk records.
@@ -187,6 +189,8 @@ Phase 6 adds `phase:change`, `timer:start`, `timer:pause`, and `timer:reset` com
 Phase 7 recalculates conflict risks after reducer updates. The detector considers ACTIVE tasks and their related file paths, derives LOW/MEDIUM/HIGH risks, updates `session.conflictRisks`, and appends non-duplicate activity entries for newly detected MEDIUM/HIGH risks.
 
 Phase 8 adds a Git adapter boundary under `src/lib/github`. The mock UI sends commit and pull request payloads, the adapter converts them to typed `LiveSprintEvent` objects, and the reducer updates commits, pull requests, linked task files/status, activity, and derived conflict risk. A real webhook handler can later replace the mock source by producing the same events.
+
+Phase 9 hardens the existing architecture rather than adding major features. Command adapters now reject invalid task titles, assignees, file paths, Git payloads, and timer durations before events enter the reducer. Seed data now demonstrates board state, presence, activity, timer, conflict risk, and Git activity immediately after startup.
 
 ## Merge-Conflict Risk Detection Strategy
 
@@ -242,7 +246,7 @@ Current implementation:
 
 ## Testing Strategy
 
-Testing will focus first on pure logic:
+Testing focuses first on pure logic:
 
 - Event reducer behavior
 - Session state transitions
@@ -251,7 +255,7 @@ Testing will focus first on pure logic:
 
 UI tests can be added after the live workflows stabilize. The MVP should maintain a fast unit test suite for core state and risk logic.
 
-Current tests cover task creation, task status updates, assignment, phase changes, timer transitions, and reducer immutability.
+Current tests cover task creation, task status updates, assignment, phase changes, timer transitions, reducer immutability, conflict-risk detection, duplicate risk prevention, mock GitHub adapters, Git reducer integration, activity formatting, file path validation, and invalid command payloads.
 
 Realtime command-adapter tests cover display-name normalization, joined-user creation, task-status command mapping, and rejecting task commands before a user joins.
 

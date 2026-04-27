@@ -10,7 +10,7 @@ import type {
   TaskUpdatePayload,
   TimerResetPayload,
 } from "@/lib/realtime/protocol";
-import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import { normalizeFilePaths, validateFilePaths } from "@/lib/tasks/filePaths";
 import { clampDurationSeconds, sprintPhases } from "@/lib/timer";
 import type { SprintSession, SprintTask, SprintUser, TaskStatus } from "@/lib/types";
 
@@ -92,6 +92,16 @@ function ensurePhase(phase: string) {
   }
 }
 
+function ensureTimerDuration(durationSeconds: number) {
+  if (
+    !Number.isFinite(durationSeconds) ||
+    durationSeconds < 60 ||
+    durationSeconds > 14_400
+  ) {
+    throw new Error("Timer duration must be between 1 and 240 minutes.");
+  }
+}
+
 function normalizeTaskTitle(title?: string) {
   const normalizedTitle = title?.trim().replace(/\s+/g, " ").slice(0, 120) ?? "";
 
@@ -129,7 +139,7 @@ export function createTaskCreatedEvent(
     status: "READY",
     reporterId,
     assigneeId: payload.assigneeId,
-    filePaths: normalizeFilePaths(payload.filePaths ?? []),
+    filePaths: normalizeTaskFilePaths(payload.filePaths ?? []),
     createdAt: occurredAt,
     updatedAt: occurredAt,
   };
@@ -170,7 +180,7 @@ export function createTaskUpdatedEvent(
         ? { assigneeId: payload.assigneeId || undefined }
         : {}),
       ...(payload.filePaths !== undefined
-        ? { filePaths: normalizeFilePaths(payload.filePaths) }
+        ? { filePaths: normalizeTaskFilePaths(payload.filePaths) }
         : {}),
     },
   };
@@ -348,13 +358,23 @@ export function createTimerResetEvent(
   const durationSeconds =
     payload.durationSeconds === undefined
       ? undefined
-      : clampDurationSeconds(payload.durationSeconds);
+      : payload.durationSeconds;
+
+  if (durationSeconds !== undefined) {
+    ensureTimerDuration(durationSeconds);
+  }
 
   return {
     id: createEventId("event-timer-reset"),
     type: "timer.reset",
     actorId,
     occurredAt,
-    durationSeconds,
+    durationSeconds:
+      durationSeconds === undefined ? undefined : clampDurationSeconds(durationSeconds),
   };
+}
+
+function normalizeTaskFilePaths(filePaths: string[] | string) {
+  validateFilePaths(filePaths);
+  return normalizeFilePaths(filePaths);
 }

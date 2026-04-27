@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { formatTaskStatus } from "@/lib/session";
-import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import { getInvalidFilePaths, normalizeFilePaths } from "@/lib/tasks/filePaths";
 import type { SprintSession, SprintTask, SprintUser, TaskStatus } from "@/lib/types";
 
 const taskStatuses: TaskStatus[] = [
@@ -60,6 +60,14 @@ function filePathsToText(filePaths: string[]) {
   return filePaths.join("\n");
 }
 
+function getFilePathError(filePaths: string) {
+  const invalidPath = getInvalidFilePaths(filePaths)[0];
+
+  return invalidPath
+    ? `Invalid path: ${invalidPath}. Use repo-relative paths like src/app/page.tsx.`
+    : undefined;
+}
+
 function TaskCreateForm({
   users,
   canEdit,
@@ -74,11 +82,12 @@ function TaskCreateForm({
   const [assigneeId, setAssigneeId] = useState("");
   const [filePaths, setFilePaths] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const filePathError = getFilePathError(filePaths);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!onCreateTask || !title.trim()) {
+    if (!onCreateTask || !title.trim() || filePathError) {
       return;
     }
 
@@ -141,9 +150,16 @@ function TaskCreateForm({
           placeholder="Related files, one per line"
           value={filePaths}
         />
+        {filePathError ? (
+          <p className="text-xs leading-5 text-rose-200">{filePathError}</p>
+        ) : (
+          <p className="text-xs leading-5 text-zinc-500">
+            Optional repo-relative paths make conflict risk detection useful.
+          </p>
+        )}
         <button
           className="h-11 rounded bg-cyan-300 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canEdit || isPending || !title.trim()}
+          disabled={!canEdit || isPending || !title.trim() || Boolean(filePathError)}
           type="submit"
         >
           {isPending ? "Creating..." : "Create task"}
@@ -177,6 +193,7 @@ function TaskCard({
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [filePaths, setFilePaths] = useState(filePathsToText(task.filePaths));
+  const filePathError = getFilePathError(filePaths);
 
   async function runTaskAction(action: () => Promise<void> | undefined) {
     setIsPending(true);
@@ -188,7 +205,7 @@ function TaskCard({
   }
 
   async function saveTaskDetails() {
-    if (!onUpdateTask) {
+    if (!onUpdateTask || filePathError) {
       return;
     }
 
@@ -260,6 +277,9 @@ function TaskCard({
             onChange={(event) => setFilePaths(event.target.value)}
             value={filePaths}
           />
+          {filePathError ? (
+            <p className="text-xs leading-5 text-rose-200">{filePathError}</p>
+          ) : null}
           <div className="grid grid-cols-2 gap-2">
             <button
               className="h-9 rounded border border-white/10 bg-white/8 text-xs font-medium text-zinc-200 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
@@ -271,7 +291,7 @@ function TaskCard({
             </button>
             <button
               className="h-9 rounded bg-cyan-300 text-xs font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isPending || !title.trim()}
+              disabled={isPending || !title.trim() || Boolean(filePathError)}
               type="button"
               onClick={() => void saveTaskDetails().catch(() => undefined)}
             >

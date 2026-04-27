@@ -1,6 +1,6 @@
 import type { LiveSprintEvent } from "@/lib/events";
 import type { MockCommitPayload, MockPullRequestPayload } from "@/lib/github/types";
-import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import { normalizeFilePaths, validateFilePaths } from "@/lib/tasks/filePaths";
 import type { SprintSession } from "@/lib/types";
 
 function ensureTaskExists(session: SprintSession, taskId: string) {
@@ -27,6 +27,18 @@ function ensureMessage(value: string, label: string) {
   }
 
   return normalized;
+}
+
+function ensureChangedFiles(filesChanged: string[]) {
+  validateFilePaths(filesChanged);
+
+  const normalizedFiles = normalizeFilePaths(filesChanged);
+
+  if (normalizedFiles.length === 0) {
+    throw new Error("At least one changed file is required.");
+  }
+
+  return normalizedFiles;
 }
 
 function createGitEventId(prefix: string) {
@@ -58,7 +70,7 @@ export function createMockCommitLinkedEvent(
       sha: createSha(),
       message: ensureMessage(payload.message, "Commit message"),
       branch: `mock/${payload.taskId}`,
-      filesChanged: normalizeFilePaths(payload.filesChanged),
+      filesChanged: ensureChangedFiles(payload.filesChanged),
       committedAt: occurredAt,
     },
   };
@@ -87,7 +99,7 @@ export function createMockPullRequestEvent(
       authorId,
       title: ensureMessage(payload.title, "Pull request title"),
       status,
-      filesChanged: normalizeFilePaths(payload.filesChanged),
+      filesChanged: ensureChangedFiles(payload.filesChanged),
       timestamp: occurredAt,
     },
   };

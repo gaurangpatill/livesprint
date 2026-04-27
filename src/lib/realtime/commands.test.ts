@@ -6,6 +6,7 @@ import {
   createTaskCreatedEvent,
   createTaskStatusEvent,
   createTaskUpdatedEvent,
+  createTimerResetEvent,
   getInitials,
   normalizeDisplayName,
 } from "@/lib/realtime/commands";
@@ -114,5 +115,51 @@ describe("realtime command adapters", () => {
         "2026-04-27T15:10:00.000Z",
       ),
     ).toThrow("Join the sprint session");
+  });
+
+  it("rejects empty task titles", () => {
+    expect(() =>
+      createTaskCreatedEvent(
+        mockSprintSession,
+        { title: "   " },
+        "user-eli",
+        "2026-04-27T15:11:00.000Z",
+      ),
+    ).toThrow("Task title is required");
+  });
+
+  it("rejects invalid related file paths", () => {
+    expect(() =>
+      createTaskUpdatedEvent(
+        mockSprintSession,
+        {
+          taskId: "task-live-board",
+          filePaths: ["src/components/sprint/SprintBoard.tsx", "../secret.env"],
+        },
+        "user-maya",
+        "2026-04-27T15:12:00.000Z",
+      ),
+    ).toThrow("Invalid file path");
+  });
+
+  it("rejects missing or unknown assignees for assignment commands", () => {
+    expect(() =>
+      createAssignTaskEvent(
+        mockSprintSession,
+        { taskId: "task-live-board", assigneeId: "" },
+        "user-maya",
+        "2026-04-27T15:13:00.000Z",
+      ),
+    ).toThrow("Assignee does not exist");
+  });
+
+  it("rejects invalid editable timer durations", () => {
+    expect(() =>
+      createTimerResetEvent(
+        { durationSeconds: 30 },
+        "user-eli",
+        "2026-04-27T15:14:00.000Z",
+      ),
+    ).toThrow("Timer duration must be between 1 and 240 minutes");
   });
 });

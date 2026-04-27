@@ -47,6 +47,13 @@ export function SprintTimerPanel({
     () => calculateRemainingSeconds(timer, now),
     [now, timer],
   );
+  const parsedDurationMinutes = Number(durationMinutes);
+  const durationError =
+    Number.isFinite(parsedDurationMinutes) &&
+    parsedDurationMinutes >= 1 &&
+    parsedDurationMinutes <= 240
+      ? undefined
+      : "Duration must be between 1 and 240 minutes.";
   const progress =
     ((timer.durationSeconds - remainingSeconds) / timer.durationSeconds) * 100;
   const isPending = Boolean(pendingAction);
@@ -126,6 +133,11 @@ export function SprintTimerPanel({
             type="number"
             value={durationMinutes}
           />
+          {durationError ? (
+            <span className="text-xs leading-5 text-rose-200">
+              {durationError}
+            </span>
+          ) : null}
         </label>
 
         <div className="grid grid-cols-3 gap-2">
@@ -147,12 +159,12 @@ export function SprintTimerPanel({
           </button>
           <button
             className="h-10 rounded border border-white/10 bg-white/8 text-xs font-semibold text-zinc-100 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={!canEdit || isPending}
+            disabled={!canEdit || isPending || Boolean(durationError)}
             type="button"
             onClick={() =>
               void runTimerAction("reset", () =>
                 onReset?.({
-                  durationSeconds: Number(durationMinutes || 0) * 60,
+                  durationSeconds: parsedDurationMinutes * 60,
                 }),
               )
             }

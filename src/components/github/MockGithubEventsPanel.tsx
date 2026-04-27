@@ -5,7 +5,7 @@ import type {
   MockCommitPayload,
   MockPullRequestPayload,
 } from "@/lib/github/types";
-import { normalizeFilePaths } from "@/lib/tasks/filePaths";
+import { getInvalidFilePaths, normalizeFilePaths } from "@/lib/tasks/filePaths";
 import type { PullRequestStatus, SprintSession } from "@/lib/types";
 
 type MockGithubEventsPanelProps = {
@@ -17,6 +17,20 @@ type MockGithubEventsPanelProps = {
 
 function filesToText(files: string[]) {
   return files.join("\n");
+}
+
+function getFileInputError(filesChanged: string) {
+  const invalidPath = getInvalidFilePaths(filesChanged)[0];
+
+  if (invalidPath) {
+    return `Invalid path: ${invalidPath}. Use repo-relative paths.`;
+  }
+
+  if (normalizeFilePaths(filesChanged).length === 0) {
+    return "Add at least one changed file.";
+  }
+
+  return undefined;
 }
 
 export function MockGithubEventsPanel({
@@ -34,6 +48,9 @@ export function MockGithubEventsPanel({
   const [prTitle, setPrTitle] = useState("Review sprint orchestration changes");
   const [prStatus, setPrStatus] = useState<PullRequestStatus>("OPENED");
   const [isPending, setIsPending] = useState(false);
+  const hasSelectedTask = session.tasks.some((task) => task.id === taskId);
+  const selectedTaskId = hasSelectedTask ? taskId : firstTaskId;
+  const fileInputError = getFileInputError(filesChanged);
 
   async function runAction(action: () => Promise<void> | undefined) {
     setIsPending(true);
@@ -53,7 +70,7 @@ export function MockGithubEventsPanel({
 
     void runAction(() =>
       onSimulateCommit?.({
-        taskId,
+        taskId: selectedTaskId,
         message,
         filesChanged: getPayloadFiles(),
       }),
@@ -65,7 +82,7 @@ export function MockGithubEventsPanel({
 
     void runAction(() =>
       onSimulatePullRequest?.({
-        taskId,
+        taskId: selectedTaskId,
         title: prTitle,
         status: prStatus,
         filesChanged: getPayloadFiles(),
@@ -98,7 +115,7 @@ export function MockGithubEventsPanel({
             className="h-10 rounded border border-white/10 bg-black/30 px-3 text-sm text-zinc-200 outline-none transition focus:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!canEdit || isPending}
             onChange={(event) => setTaskId(event.target.value)}
-            value={taskId}
+            value={selectedTaskId}
           >
             {session.tasks.map((task) => (
               <option key={task.id} value={task.id}>
@@ -130,11 +147,27 @@ export function MockGithubEventsPanel({
             onChange={(event) => setFilesChanged(event.target.value)}
             value={filesChanged}
           />
+          {fileInputError ? (
+            <span className="text-xs leading-5 text-rose-200">
+              {fileInputError}
+            </span>
+          ) : (
+            <span className="text-xs leading-5 text-zinc-500">
+              Changed files are merged into the linked task and can trigger
+              conflict risk.
+            </span>
+          )}
         </label>
 
         <button
           className="h-10 rounded bg-cyan-300 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canEdit || isPending || !taskId || !message.trim()}
+          disabled={
+            !canEdit ||
+            isPending ||
+            !selectedTaskId ||
+            !message.trim() ||
+            Boolean(fileInputError)
+          }
           type="submit"
         >
           {isPending ? "Sending..." : "Simulate commit pushed"}
@@ -177,7 +210,13 @@ export function MockGithubEventsPanel({
 
         <button
           className="h-10 rounded border border-white/10 bg-white/8 px-4 text-sm font-semibold text-zinc-100 transition hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!canEdit || isPending || !taskId || !prTitle.trim()}
+          disabled={
+            !canEdit ||
+            isPending ||
+            !selectedTaskId ||
+            !prTitle.trim() ||
+            Boolean(fileInputError)
+          }
           type="submit"
         >
           {isPending ? "Sending..." : "Simulate pull request"}
@@ -185,6 +224,13 @@ export function MockGithubEventsPanel({
       </form>
 
       <div className="mt-5 space-y-4">
+        {session.commits.length === 0 && session.pullRequests.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-white/10 bg-black/20 p-5 text-sm leading-6 text-zinc-500">
+            No mock Git events yet. Join the session, pick a task, and send a
+            commit or pull request to drive the same event pipeline a webhook
+            would use.
+          </div>
+        ) : null}
         {session.commits.slice(0, 3).map((commit) => (
           <article
             className="rounded-lg border border-white/10 bg-black/20 p-4"

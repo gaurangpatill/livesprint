@@ -79,4 +79,35 @@ describe("mock GitHub event adapter", () => {
       },
     });
   });
+
+  it("rejects commits without changed files", () => {
+    expect(() =>
+      createMockCommitLinkedEvent(
+        mockSprintSession,
+        {
+          taskId: "task-live-board",
+          message: "No files",
+          filesChanged: [],
+        },
+        "user-maya",
+        "2026-04-27T19:12:00.000Z",
+      ),
+    ).toThrow("At least one changed file is required");
+  });
+
+  it("rejects Git events with invalid changed file paths", () => {
+    expect(() =>
+      createMockPullRequestEvent(
+        mockSprintSession,
+        {
+          taskId: "task-live-board",
+          title: "Unsafe path",
+          status: "OPENED",
+          filesChanged: ["../outside.ts"],
+        },
+        "user-maya",
+        "2026-04-27T19:13:00.000Z",
+      ),
+    ).toThrow("Invalid file path");
+  });
 });

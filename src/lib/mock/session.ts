@@ -68,6 +68,7 @@ export const mockSprintSession: SprintSession = {
         "src/lib/session/index.ts",
         "src/lib/events/index.ts",
         "src/lib/types/sprint.ts",
+        "src/components/sprint/SprintBoard.tsx",
       ],
       createdAt: "2026-04-27T12:10:00.000Z",
       updatedAt: "2026-04-27T13:10:00.000Z",
@@ -145,6 +146,29 @@ export const mockSprintSession: SprintSession = {
   ],
   activity: [
     {
+      id: "activity-risk-board-conflict",
+      type: "conflict.risk_detected",
+      actorId: "user-omar",
+      message:
+        "HIGH conflict risk detected: 2 active tasks are touching the exact same file: src/components/sprint/SprintBoard.tsx.",
+      createdAt: "2026-04-27T13:24:00.000Z",
+      metadata: {
+        riskId: "risk-high-src-components-sprint-SprintBoard-tsx",
+        affectedPath: "src/components/sprint/SprintBoard.tsx",
+        involvedTaskIds: ["task-live-board", "task-session-reducer"],
+        involvedUserIds: ["user-maya", "user-omar"],
+      },
+    },
+    {
+      id: "activity-pr-feed",
+      type: "pull_request.opened",
+      actorId: "user-eli",
+      taskId: "task-activity-feed",
+      message:
+        'Eli Rivera opened pull request "Polish activity timeline" for "Shape activity feed event messages".',
+      createdAt: "2026-04-27T13:22:00.000Z",
+    },
+    {
       id: "activity-review-feed",
       type: "task.review_requested",
       actorId: "user-eli",
@@ -188,8 +212,35 @@ export const mockSprintSession: SprintSession = {
       committedAt: "2026-04-27T13:08:00.000Z",
     },
   ],
-  pullRequests: [],
-  conflictRisks: [],
+  pullRequests: [
+    {
+      id: "pr-seed-activity-feed",
+      taskId: "task-activity-feed",
+      authorId: "user-eli",
+      title: "Polish activity timeline",
+      status: "OPENED",
+      filesChanged: [
+        "src/components/activity/ActivityFeed.tsx",
+        "src/lib/events/formatters.ts",
+      ],
+      timestamp: "2026-04-27T13:22:00.000Z",
+    },
+  ],
+  conflictRisks: [
+    {
+      id: "risk-high-src-components-sprint-SprintBoard-tsx",
+      level: "HIGH",
+      affectedPath: "src/components/sprint/SprintBoard.tsx",
+      involvedTaskIds: ["task-live-board", "task-session-reducer"],
+      involvedUserIds: ["user-maya", "user-omar"],
+      explanation:
+        "2 active tasks are touching the exact same file: src/components/sprint/SprintBoard.tsx.",
+      suggestedAction:
+        "Coordinate ownership immediately or split the file changes before continuing.",
+      createdAt: "2026-04-27T13:24:00.000Z",
+      updatedAt: now,
+    },
+  ],
   createdAt: "2026-04-27T12:00:00.000Z",
   updatedAt: now,
 };

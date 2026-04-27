@@ -24,14 +24,14 @@ export function getDashboardModules(
       title: "Presence",
       label: "Team",
       value: `${onlineUsers.length}/${session.users.length} online`,
-      detail: "Presence is seeded now and will become live in Phase 3.",
-      tone: "pending",
+      detail: "Joined users, disconnects, and current focus update live.",
+      tone: "ready",
     },
     {
       title: "Activity Feed",
       label: "Events",
       value: `${session.activity.length} events`,
-      detail: "Reducer-generated activity events will accumulate here.",
+      detail: "Every accepted command becomes a typed, readable event.",
       tone: "ready",
     },
     {
@@ -47,14 +47,19 @@ export function getDashboardModules(
       value: highestRisk?.level ?? "None",
       detail:
         highestRisk?.suggestedAction ??
-        "No conflict-risk records are present in the seed session.",
-      tone: highestRisk?.level === "HIGH" ? "danger" : "warning",
+        "No active file overlap is present in the authoritative session.",
+      tone:
+        highestRisk?.level === "HIGH"
+          ? "danger"
+          : highestRisk?.level === "MEDIUM"
+            ? "warning"
+            : "ready",
     },
     {
       title: "Mock GitHub Events",
       label: "Source",
-      value: `${session.commits.length} commit`,
-      detail: "Commit events are typed but still seeded manually in Phase 2.",
+      value: `${session.commits.length + session.pullRequests.length} events`,
+      detail: "Mock commits and pull requests flow through the same reducer.",
       tone: "ready",
     },
   ];
@@ -62,8 +67,8 @@ export function getDashboardModules(
 
 export function getFoundationStats(session: SprintSession) {
   return [
-    { label: "Architecture", value: "Event reducer" },
+    { label: "Architecture", value: "Event driven" },
     { label: "Sprint phase", value: session.phase },
-    { label: "State target", value: "Authoritative session" },
+    { label: "Realtime", value: "Socket.IO" },
   ];
 }
