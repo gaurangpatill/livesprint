@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 6 now includes a server-authoritative sprint phase timer synchronized across connected clients.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 7 now derives merge-conflict risk from active task file paths and broadcasts those warnings in real time.
 
 The target architecture will use:
 
@@ -125,6 +125,8 @@ Status: implemented with timer commands, pure timer logic, phase changes, durati
 - HIGH: multiple active tasks touch the exact same file
 - Show explanation and suggested action
 
+Status: implemented with pure conflict detection, derived session risks, live conflict panel updates, and `conflict.risk_detected` activity entries for new MEDIUM/HIGH risks.
+
 ### Phase 8: Mock GitHub events
 
 - Simulate commit pushed, PR opened, PR merged
@@ -180,9 +182,11 @@ Phase 5 centralizes readable event formatting under `src/lib/events/formatters.t
 
 Phase 6 adds `phase:change`, `timer:start`, `timer:pause`, and `timer:reset` commands. The server materializes the current timer before applying events so late joiners and command handlers use authoritative remaining time. Clients render the countdown locally between server broadcasts from `startedAt`, `remainingSeconds`, and `updatedAt`.
 
+Phase 7 recalculates conflict risks after reducer updates. The detector considers ACTIVE tasks and their related file paths, derives LOW/MEDIUM/HIGH risks, updates `session.conflictRisks`, and appends non-duplicate activity entries for newly detected MEDIUM/HIGH risks.
+
 ## Merge-Conflict Risk Detection Strategy
 
-Conflict risk will be derived from active task file paths and mock commit file changes.
+Conflict risk is currently derived from active task file paths. Mock commit file changes will feed the same detector in a later phase.
 
 Risk levels:
 
@@ -200,6 +204,8 @@ Each risk result should include:
 - Suggested coordination action
 
 The first implementation will be deterministic and in-memory so it can be unit tested thoroughly.
+
+This is intentionally a soft warning system. It predicts coordination risk from declared file paths; it does not inspect Git branches, merge bases, diffs, or AST-level semantic conflicts yet.
 
 ## Mock GitHub Event Strategy
 

@@ -2,7 +2,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
 
-This repository is currently at Phase 6: shared sprint phase timer. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
+This repository is currently at Phase 7: merge-conflict risk detection. Real GitHub integration, persistence, and authentication are intentionally not implemented yet.
 
 ## Current Status
 
@@ -27,12 +27,13 @@ Implemented:
 - First-class live activity timeline with event filters
 - Shared event formatter for human-readable activity messages
 - Server-authoritative sprint phase timer with start, pause, reset, phase change, and duration control
+- Real-time merge-conflict risk detection from active task file paths
+- Conflict risk panel with LOW, MEDIUM, and HIGH risk explanations
 - Vitest reducer and command-adapter tests
 - Project plan in `PLAN.md`
 
 Not implemented yet:
 
-- Automated conflict-risk detection
 - Interactive mock GitHub event simulation
 - Persistence
 - Authentication
@@ -158,6 +159,16 @@ src/lib/mock
 5. Confirm the other tab receives the same phase and countdown state.
 6. Join from a third tab after the timer is already running and confirm it receives the current authoritative timer snapshot.
 
+## Phase 7 Demo Flow
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000` in two browser tabs and join with different names.
+3. Create two tasks with related file paths in the same directory, for example `src/lib/session/a.ts` and `src/lib/session/b.ts`.
+4. Move both tasks to ACTIVE and confirm a MEDIUM risk appears in both tabs.
+5. Edit one task so both tasks touch the exact same file, for example `src/lib/session/index.ts`.
+6. Confirm the risk upgrades to HIGH and a conflict event appears in the Activity Feed.
+7. Move one task to DONE and confirm the risk disappears or downgrades.
+
 ## Architecture Direction
 
 The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
@@ -210,7 +221,18 @@ Phase 6 adds a synchronized sprint timer:
 - Clients derive the visible countdown locally from the synchronized `startedAt`, `remainingSeconds`, and `updatedAt` fields.
 - Timer and phase events appear in the activity feed through `timer.started`, `timer.paused`, `timer.reset`, and `phase.changed`.
 
-Conflict risk will be derived from active task file paths:
+Phase 7 adds merge-conflict risk detection:
+
+- `src/lib/conflicts` contains pure file-path risk detection.
+- Only ACTIVE tasks are considered for conflict risk.
+- LOW means one active task is touching a file.
+- MEDIUM means multiple active tasks are touching files in the same directory/module.
+- HIGH means multiple active tasks are touching the exact same file.
+- Conflict risks are derived after reducer updates, stored on the session, and broadcast to every connected client.
+- New MEDIUM/HIGH risks append `conflict.risk_detected` activity entries, while unchanged risks do not spam the feed.
+- This is a soft warning system based on declared file paths, not a merge blocker or a guarantee of actual Git conflicts.
+
+Conflict risk is derived from active task file paths:
 
 - `LOW`: one active task touches a file
 - `MEDIUM`: multiple active tasks touch files in the same directory or module
@@ -225,7 +247,8 @@ Mock GitHub events will be typed event inputs first, so real webhook ingestion c
 - Reconnect does not restore identity automatically; the user can join again.
 - Timer countdown is synchronized from server events and locally displayed between events; there is no separate per-second server broadcast.
 - There is no authentication or authorization.
-- Conflict-risk records are still seeded placeholders.
+- Conflict detection only uses task related file paths until mock Git events are implemented.
+- Risk is heuristic and file-level; it does not inspect ASTs, diffs, branches, or actual Git merge bases yet.
 - GitHub events are not interactive yet.
 
 ## Screenshots

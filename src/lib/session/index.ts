@@ -1,4 +1,8 @@
 import {
+  detectConflictRisks,
+  getNewSignificantRisks,
+} from "@/lib/conflicts";
+import {
   formatLiveSprintEvent,
   getTaskIdFromEvent,
   taskStatusLabels,
@@ -34,6 +38,39 @@ function createActivityEvent(
     taskId: getTaskIdFromEvent(event),
     message: presentation.message,
     createdAt: event.occurredAt,
+  };
+}
+
+function createConflictActivityEvent(
+  session: SprintSession,
+  risk: SprintSession["conflictRisks"][number],
+  actorId: string | undefined,
+  occurredAt: string,
+): ActivityEvent {
+  const event: LiveSprintEvent = {
+    id: `event-${risk.id}-${Date.parse(occurredAt)}`,
+    type: "conflict.risk_detected",
+    actorId,
+    occurredAt,
+    risk,
+  };
+  const presentation = formatLiveSprintEvent(event, {
+    previousSession: session,
+    nextSession: session,
+  });
+
+  return {
+    id: `activity-${event.id}`,
+    type: event.type,
+    actorId,
+    message: presentation.message,
+    createdAt: occurredAt,
+    metadata: {
+      riskId: risk.id,
+      affectedPath: risk.affectedPath,
+      involvedTaskIds: risk.involvedTaskIds,
+      involvedUserIds: risk.involvedUserIds,
+    },
   };
 }
 
@@ -242,10 +279,28 @@ export function reduceSprintSession(
 ): SprintSession {
   const nextSession = applyEvent(session, event);
   const activity = createActivityEvent(session, nextSession, event);
+  const conflictRisks = detectConflictRisks(
+    nextSession.tasks,
+    event.occurredAt,
+    session.conflictRisks,
+  );
+  const newSignificantRisks = getNewSignificantRisks(
+    session.conflictRisks,
+    conflictRisks,
+  );
+  const conflictActivity = newSignificantRisks.map((risk) =>
+    createConflictActivityEvent(
+      { ...nextSession, conflictRisks },
+      risk,
+      event.actorId,
+      event.occurredAt,
+    ),
+  );
 
   return {
     ...nextSession,
-    activity: [activity, ...nextSession.activity],
+    conflictRisks,
+    activity: [...conflictActivity, activity, ...nextSession.activity],
   };
 }
 

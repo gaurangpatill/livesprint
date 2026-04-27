@@ -188,21 +188,7 @@ export const mockSprintSession: SprintSession = {
       committedAt: "2026-04-27T13:08:00.000Z",
     },
   ],
-  conflictRisks: [
-    {
-      id: "risk-session-overlap",
-      level: "MEDIUM",
-      taskIds: ["task-session-reducer", "task-ws-contract"],
-      userIds: ["user-omar", "user-nina"],
-      filePaths: ["src/lib/events/index.ts", "src/lib/session/index.ts"],
-      directory: "src/lib",
-      explanation:
-        "Two active tasks are planned around the same event/session modules.",
-      suggestedAction:
-        "Confirm ownership before changing shared event contracts.",
-      detectedAt: "2026-04-27T13:14:00.000Z",
-    },
-  ],
+  conflictRisks: [],
   createdAt: "2026-04-27T12:00:00.000Z",
   updatedAt: now,
 };

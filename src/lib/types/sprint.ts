@@ -74,13 +74,13 @@ export type CommitEvent = {
 export type ConflictRisk = {
   id: string;
   level: ConflictRiskLevel;
-  taskIds: string[];
-  userIds: string[];
-  filePaths: string[];
-  directory?: string;
+  affectedPath: string;
+  involvedTaskIds: string[];
+  involvedUserIds: string[];
   explanation: string;
   suggestedAction: string;
-  detectedAt: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type SprintSession = {
