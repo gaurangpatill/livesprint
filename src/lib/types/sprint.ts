@@ -63,12 +63,24 @@ export type ActivityEvent = {
 export type CommitEvent = {
   id: string;
   taskId?: string;
-  userId: string;
+  authorId: string;
   sha: string;
   message: string;
   branch: string;
   filesChanged: string[];
   committedAt: string;
+};
+
+export type PullRequestStatus = "OPENED" | "MERGED";
+
+export type PullRequestEvent = {
+  id: string;
+  taskId?: string;
+  authorId: string;
+  title: string;
+  status: PullRequestStatus;
+  filesChanged: string[];
+  timestamp: string;
 };
 
 export type ConflictRisk = {
@@ -92,6 +104,7 @@ export type SprintSession = {
   tasks: SprintTask[];
   activity: ActivityEvent[];
   commits: CommitEvent[];
+  pullRequests: PullRequestEvent[];
   conflictRisks: ConflictRisk[];
   createdAt: string;
   updatedAt: string;

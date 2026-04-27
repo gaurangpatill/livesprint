@@ -1,6 +1,7 @@
 import type {
   CommitEvent,
   ConflictRisk,
+  PullRequestEvent,
   SprintPhase,
   SprintTask,
   SprintUser,
@@ -22,6 +23,8 @@ export type LiveSprintEventType =
   | "timer.paused"
   | "timer.reset"
   | "commit.linked"
+  | "pull_request.opened"
+  | "pull_request.merged"
   | "conflict.risk_detected";
 
 export type BaseLiveSprintEvent = {
@@ -93,6 +96,14 @@ export type LiveSprintEvent =
   | (BaseLiveSprintEvent & {
       type: "commit.linked";
       commit: CommitEvent;
+    })
+  | (BaseLiveSprintEvent & {
+      type: "pull_request.opened";
+      pullRequest: PullRequestEvent;
+    })
+  | (BaseLiveSprintEvent & {
+      type: "pull_request.merged";
+      pullRequest: PullRequestEvent;
     })
   | (BaseLiveSprintEvent & {
       type: "conflict.risk_detected";

@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type {
+  MockCommitPayload,
+  MockPullRequestPayload,
+} from "@/lib/github/types";
+import type {
   ClientToServerEvents,
   ConnectionStatus,
   JoinSessionAck,
@@ -92,6 +96,7 @@ export function useLiveSprintSession({
         ClientToServerEvents,
         "task:assign" | "task:update-status" | "task:block" | "task:complete"
         | "task:create" | "task:update" | "phase:change" | "timer:reset"
+        | "github:commit" | "github:pull-request"
       >,
       payload: TPayload,
       emit: CommandEmitter<TPayload>,
@@ -304,6 +309,26 @@ export function useLiveSprintSession({
     [emitCommand],
   );
 
+  const simulateCommit = useCallback(
+    (payload: MockCommitPayload) => {
+      const socket = socketRef.current;
+      return emitCommand("github:commit", payload, (body, ack) =>
+        socket?.emit("github:commit", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
+  const simulatePullRequest = useCallback(
+    (payload: MockPullRequestPayload) => {
+      const socket = socketRef.current;
+      return emitCommand("github:pull-request", payload, (body, ack) =>
+        socket?.emit("github:pull-request", body, ack),
+      );
+    },
+    [emitCommand],
+  );
+
   return {
     session,
     status,
@@ -322,6 +347,8 @@ export function useLiveSprintSession({
     startTimer,
     pauseTimer,
     resetTimer,
+    simulateCommit,
+    simulatePullRequest,
     clearError: () => setError(undefined),
   };
 }

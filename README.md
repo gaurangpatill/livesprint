@@ -2,7 +2,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
 
-This repository is currently at Phase 7: merge-conflict risk detection. Real GitHub integration, persistence, and authentication are intentionally not implemented yet.
+This repository is currently at Phase 8: mock GitHub events. Real GitHub auth/webhooks, persistence, and authentication are intentionally not implemented yet.
 
 ## Current Status
 
@@ -29,12 +29,14 @@ Implemented:
 - Server-authoritative sprint phase timer with start, pause, reset, phase change, and duration control
 - Real-time merge-conflict risk detection from active task file paths
 - Conflict risk panel with LOW, MEDIUM, and HIGH risk explanations
+- Mock GitHub commit and pull request event simulator
+- Git events update linked task files, task status, activity, and conflict risk
 - Vitest reducer and command-adapter tests
 - Project plan in `PLAN.md`
 
 Not implemented yet:
 
-- Interactive mock GitHub event simulation
+- Real GitHub auth/webhooks
 - Persistence
 - Authentication
 
@@ -169,6 +171,16 @@ src/lib/mock
 6. Confirm the risk upgrades to HIGH and a conflict event appears in the Activity Feed.
 7. Move one task to DONE and confirm the risk disappears or downgrades.
 
+## Phase 8 Demo Flow
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000` in two browser tabs and join with different names.
+3. Select a task in the Mock GitHub Events panel.
+4. Simulate a commit with changed files and confirm the linked task receives those related files.
+5. Simulate a PR opened and confirm the task moves to REVIEW.
+6. Simulate a PR merged and confirm the task moves to DONE.
+7. Use changed files that overlap with another ACTIVE task to see conflict risk update live.
+
 ## Architecture Direction
 
 The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
@@ -232,13 +244,22 @@ Phase 7 adds merge-conflict risk detection:
 - New MEDIUM/HIGH risks append `conflict.risk_detected` activity entries, while unchanged risks do not spam the feed.
 - This is a soft warning system based on declared file paths, not a merge blocker or a guarantee of actual Git conflicts.
 
-Conflict risk is derived from active task file paths:
+Phase 8 adds mock GitHub events:
+
+- `src/lib/github/mock-events.ts` adapts mock UI payloads into typed `LiveSprintEvent` objects.
+- Commit simulation emits `commit.linked`, stores the commit, and merges changed files into the linked task.
+- PR opened emits `pull_request.opened`, stores the PR, merges changed files into the linked task, and moves the task to REVIEW.
+- PR merged emits `pull_request.merged`, stores the PR, merges changed files into the linked task, and moves the task to DONE.
+- Git events flow through the same reducer, activity feed, conflict detector, and Socket.IO broadcast path as manual sprint actions.
+- A real GitHub webhook handler can later replace the mock source by producing the same typed events.
+
+Conflict risk is derived from active task file paths and mock Git file changes:
 
 - `LOW`: one active task touches a file
 - `MEDIUM`: multiple active tasks touch files in the same directory or module
 - `HIGH`: multiple active tasks touch the exact same file
 
-Mock GitHub events will be typed event inputs first, so real webhook ingestion can replace the mock source later.
+Mock GitHub events are typed event inputs first, so real webhook ingestion can replace the mock source later.
 
 ## Current Limitations
 
@@ -247,9 +268,9 @@ Mock GitHub events will be typed event inputs first, so real webhook ingestion c
 - Reconnect does not restore identity automatically; the user can join again.
 - Timer countdown is synchronized from server events and locally displayed between events; there is no separate per-second server broadcast.
 - There is no authentication or authorization.
-- Conflict detection only uses task related file paths until mock Git events are implemented.
+- Conflict detection uses task related file paths, including files added by mock commit and PR events.
 - Risk is heuristic and file-level; it does not inspect ASTs, diffs, branches, or actual Git merge bases yet.
-- GitHub events are not interactive yet.
+- GitHub events are mocked locally and do not validate repository access, webhook signatures, branch state, or real PR numbers yet.
 
 ## Screenshots
 

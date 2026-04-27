@@ -2,6 +2,10 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import type { LiveSprintEvent } from "./src/lib/events";
+import {
+  createMockCommitLinkedEvent,
+  createMockPullRequestEvent,
+} from "./src/lib/github/mock-events";
 import { mockSprintSession } from "./src/lib/mock/session";
 import {
   createAssignTaskEvent,
@@ -325,6 +329,44 @@ async function main() {
       } catch (error) {
         socket.emit("session:error", {
           code: "INVALID_TIMER_RESET",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("github:commit", (payload, ack) => {
+      try {
+        const event = createMockCommitLinkedEvent(
+          currentSession,
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_GITHUB_COMMIT",
+          message: getErrorMessage(error),
+        });
+        acknowledgeError(ack, error);
+      }
+    });
+
+    socket.on("github:pull-request", (payload, ack) => {
+      try {
+        const event = createMockPullRequestEvent(
+          currentSession,
+          payload,
+          socket.data.userId,
+          new Date().toISOString(),
+        );
+        applyAndBroadcast(io, event);
+        ack?.({ ok: true });
+      } catch (error) {
+        socket.emit("session:error", {
+          code: "INVALID_GITHUB_PULL_REQUEST",
           message: getErrorMessage(error),
         });
         acknowledgeError(ack, error);

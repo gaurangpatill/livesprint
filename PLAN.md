@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 7 now derives merge-conflict risk from active task file paths and broadcasts those warnings in real time.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 8 now routes mock GitHub commit and pull request events through the same event-driven realtime architecture.
 
 The target architecture will use:
 
@@ -134,6 +134,8 @@ Status: implemented with pure conflict detection, derived session risks, live co
 - Update conflict risk from files changed
 - Design so real GitHub webhooks can be added later
 
+Status: implemented with a mock GitHub adapter, commit/PR simulator UI, typed `commit.linked`, `pull_request.opened`, and `pull_request.merged` events, reducer integration, activity feed messages, and conflict-risk recalculation from changed files.
+
 ### Phase 9: Polish, tests, README
 
 - Clean UI
@@ -184,9 +186,11 @@ Phase 6 adds `phase:change`, `timer:start`, `timer:pause`, and `timer:reset` com
 
 Phase 7 recalculates conflict risks after reducer updates. The detector considers ACTIVE tasks and their related file paths, derives LOW/MEDIUM/HIGH risks, updates `session.conflictRisks`, and appends non-duplicate activity entries for newly detected MEDIUM/HIGH risks.
 
+Phase 8 adds a Git adapter boundary under `src/lib/github`. The mock UI sends commit and pull request payloads, the adapter converts them to typed `LiveSprintEvent` objects, and the reducer updates commits, pull requests, linked task files/status, activity, and derived conflict risk. A real webhook handler can later replace the mock source by producing the same events.
+
 ## Merge-Conflict Risk Detection Strategy
 
-Conflict risk is currently derived from active task file paths. Mock commit file changes will feed the same detector in a later phase.
+Conflict risk is currently derived from active task file paths, including file paths added by mock commit and pull request events.
 
 Risk levels:
 
@@ -209,7 +213,7 @@ This is intentionally a soft warning system. It predicts coordination risk from 
 
 ## Mock GitHub Event Strategy
 
-Mock GitHub events will be modeled as typed developer workflow events rather than hard-coded UI tricks.
+Mock GitHub events are modeled as typed developer workflow events rather than hard-coded UI tricks.
 
 Planned mock events:
 
@@ -226,6 +230,15 @@ Each event should optionally link to:
 - A pull request number
 
 The design should make it straightforward to replace the mock source with real GitHub webhooks later.
+
+Current implementation:
+
+- Mock commits emit `commit.linked`
+- Mock PR opens emit `pull_request.opened`
+- Mock PR merges emit `pull_request.merged`
+- Changed files are merged into linked task file paths
+- PR opened moves the linked task to review
+- PR merged moves the linked task to done
 
 ## Testing Strategy
 

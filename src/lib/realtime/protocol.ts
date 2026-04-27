@@ -1,4 +1,8 @@
 import type { LiveSprintEvent } from "@/lib/events";
+import type {
+  MockCommitPayload,
+  MockPullRequestPayload,
+} from "@/lib/github/types";
 import type { SprintPhase, SprintSession, TaskStatus } from "@/lib/types";
 
 export type ConnectionStatus =
@@ -121,6 +125,14 @@ export type ClientToServerEvents = {
   "timer:pause": (ack?: (response: RealtimeCommandAck) => void) => void;
   "timer:reset": (
     payload: TimerResetPayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
+  "github:commit": (
+    payload: MockCommitPayload,
+    ack?: (response: RealtimeCommandAck) => void,
+  ) => void;
+  "github:pull-request": (
+    payload: MockPullRequestPayload,
     ack?: (response: RealtimeCommandAck) => void,
   ) => void;
 };

@@ -128,4 +128,62 @@ describe("event formatters", () => {
       message: "Eli Rivera performed system.unknown.",
     });
   });
+
+  it("formats Git events", () => {
+    const session = freshSession();
+    const commitEvent: LiveSprintEvent = {
+      id: "event-commit-test",
+      type: "commit.linked",
+      actorId: "user-maya",
+      occurredAt: "2026-04-27T16:20:00.000Z",
+      commit: {
+        id: "commit-test",
+        taskId: "task-live-board",
+        authorId: "user-maya",
+        sha: "abc1234",
+        message: "Update board",
+        branch: "mock/task-live-board",
+        filesChanged: ["src/components/sprint/SprintBoard.tsx"],
+        committedAt: "2026-04-27T16:20:00.000Z",
+      },
+    };
+    const prEvent: LiveSprintEvent = {
+      id: "event-pr-test",
+      type: "pull_request.opened",
+      actorId: "user-maya",
+      occurredAt: "2026-04-27T16:21:00.000Z",
+      pullRequest: {
+        id: "pr-test",
+        taskId: "task-live-board",
+        authorId: "user-maya",
+        title: "Update board PR",
+        status: "OPENED",
+        filesChanged: ["src/components/sprint/SprintBoard.tsx"],
+        timestamp: "2026-04-27T16:21:00.000Z",
+      },
+    };
+
+    expect(
+      formatLiveSprintEvent(commitEvent, {
+        previousSession: session,
+        nextSession: session,
+      }),
+    ).toMatchObject({
+      category: "git",
+      label: "Commit linked",
+      message:
+        'Maya Chen linked commit abc1234 to "Render sprint board from session state".',
+    });
+    expect(
+      formatLiveSprintEvent(prEvent, {
+        previousSession: session,
+        nextSession: session,
+      }),
+    ).toMatchObject({
+      category: "git",
+      label: "PR opened",
+      message:
+        'Maya Chen opened pull request "Update board PR" for "Render sprint board from session state".',
+    });
+  });
 });

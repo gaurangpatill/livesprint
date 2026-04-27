@@ -180,7 +180,7 @@ export const mockSprintSession: SprintSession = {
     {
       id: "commit-seed-reducer",
       taskId: "task-session-reducer",
-      userId: "user-omar",
+      authorId: "user-omar",
       sha: "a18f42c",
       message: "Add reducer skeleton for sprint events",
       branch: "feature/session-reducer",
@@ -188,6 +188,7 @@ export const mockSprintSession: SprintSession = {
       committedAt: "2026-04-27T13:08:00.000Z",
     },
   ],
+  pullRequests: [],
   conflictRisks: [],
   createdAt: "2026-04-27T12:00:00.000Z",
   updatedAt: now,

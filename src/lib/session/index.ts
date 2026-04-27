@@ -20,6 +20,7 @@ import {
   resetTimer,
   startTimer,
 } from "@/lib/timer";
+import { normalizeFilePaths } from "@/lib/tasks/filePaths";
 
 function createActivityEvent(
   previousSession: SprintSession,
@@ -80,6 +81,10 @@ function updateTask(
   updater: (task: SprintTask) => SprintTask,
 ) {
   return tasks.map((task) => (task.id === taskId ? updater(task) : task));
+}
+
+function mergeFilePaths(existingPaths: string[], nextPaths: string[]) {
+  return normalizeFilePaths([...existingPaths, ...nextPaths]);
 }
 
 function applyEvent(
@@ -261,6 +266,51 @@ function applyEvent(
       return {
         ...session,
         commits: [...session.commits, event.commit],
+        tasks: event.commit.taskId
+          ? updateTask(session.tasks, event.commit.taskId, (task) => ({
+              ...task,
+              filePaths: mergeFilePaths(task.filePaths, event.commit.filesChanged),
+              updatedAt: event.occurredAt,
+            }))
+          : session.tasks,
+        updatedAt: event.occurredAt,
+      };
+
+    case "pull_request.opened":
+      return {
+        ...session,
+        pullRequests: [...session.pullRequests, event.pullRequest],
+        tasks: event.pullRequest.taskId
+          ? updateTask(session.tasks, event.pullRequest.taskId, (task) => ({
+              ...task,
+              status: "IN_REVIEW",
+              reviewRequestedAt: task.reviewRequestedAt ?? event.occurredAt,
+              filePaths: mergeFilePaths(
+                task.filePaths,
+                event.pullRequest.filesChanged,
+              ),
+              updatedAt: event.occurredAt,
+            }))
+          : session.tasks,
+        updatedAt: event.occurredAt,
+      };
+
+    case "pull_request.merged":
+      return {
+        ...session,
+        pullRequests: [...session.pullRequests, event.pullRequest],
+        tasks: event.pullRequest.taskId
+          ? updateTask(session.tasks, event.pullRequest.taskId, (task) => ({
+              ...task,
+              status: "DONE",
+              completedAt: task.completedAt ?? event.occurredAt,
+              filePaths: mergeFilePaths(
+                task.filePaths,
+                event.pullRequest.filesChanged,
+              ),
+              updatedAt: event.occurredAt,
+            }))
+          : session.tasks,
         updatedAt: event.occurredAt,
       };
 

@@ -40,6 +40,8 @@ const activityTypeLabels: Record<LiveSprintEventType, string> = {
   "timer.paused": "Timer paused",
   "timer.reset": "Timer reset",
   "commit.linked": "Commit linked",
+  "pull_request.opened": "PR opened",
+  "pull_request.merged": "PR merged",
   "conflict.risk_detected": "Conflict detected",
 };
 
@@ -56,7 +58,7 @@ export function getActivityCategory(type: string): Exclude<ActivityFilter, "all"
     return "timer";
   }
 
-  if (type.startsWith("commit.")) {
+  if (type.startsWith("commit.") || type.startsWith("pull_request.")) {
     return "git";
   }
 
@@ -98,6 +100,13 @@ export function getTaskIdFromEvent(event: LiveSprintEvent) {
 
   if (event.type === "commit.linked") {
     return event.commit.taskId;
+  }
+
+  if (
+    event.type === "pull_request.opened" ||
+    event.type === "pull_request.merged"
+  ) {
+    return event.pullRequest.taskId;
   }
 
   return undefined;
@@ -230,6 +239,26 @@ export function formatLiveSprintEvent(
           event.commit.taskId ? `"${taskTitle}"` : "the sprint"
         }.`,
         taskTitle: event.commit.taskId ? taskTitle : undefined,
+      };
+    case "pull_request.opened":
+      return {
+        actorName,
+        category,
+        label,
+        message: `${actorName} opened pull request "${event.pullRequest.title}"${
+          event.pullRequest.taskId ? ` for "${taskTitle}"` : ""
+        }.`,
+        taskTitle: event.pullRequest.taskId ? taskTitle : undefined,
+      };
+    case "pull_request.merged":
+      return {
+        actorName,
+        category,
+        label,
+        message: `${actorName} merged pull request "${event.pullRequest.title}"${
+          event.pullRequest.taskId ? ` for "${taskTitle}"` : ""
+        }.`,
+        taskTitle: event.pullRequest.taskId ? taskTitle : undefined,
       };
     case "conflict.risk_detected":
       return {

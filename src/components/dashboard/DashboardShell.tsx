@@ -32,6 +32,8 @@ export function DashboardShell() {
     startTimer,
     pauseTimer,
     resetTimer,
+    simulateCommit,
+    simulatePullRequest,
   } = useLiveSprintSession({ initialSession: mockSprintSession });
   const dashboardModules = getDashboardModules(session);
   const foundationStats = getFoundationStats(session);
@@ -183,7 +185,12 @@ export function DashboardShell() {
             />
             <ActivityFeed session={session} />
             <ConflictRiskPanel session={session} />
-            <MockGithubEventsPanel session={session} />
+            <MockGithubEventsPanel
+              canEdit={isJoined}
+              onSimulateCommit={simulateCommit}
+              onSimulatePullRequest={simulatePullRequest}
+              session={session}
+            />
             <section className="rounded-lg border border-white/10 bg-white/[0.04] p-5">
               <div className="flex items-center justify-between gap-4">
                 <div>

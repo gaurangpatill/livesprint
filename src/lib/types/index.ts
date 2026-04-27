@@ -4,6 +4,8 @@ export type {
   CommitEvent,
   ConflictRisk,
   ConflictRiskLevel,
+  PullRequestEvent,
+  PullRequestStatus,
   SprintPhase,
   SprintSession,
   SprintTask,
