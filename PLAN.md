@@ -33,7 +33,7 @@ The project is intentionally scoped to show strong engineering fundamentals: rea
 
 ## Architecture Overview
 
-The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 4 now provides a live five-column sprint board where task creation, assignment, editing, and status changes go through the server-authoritative reducer.
+The MVP starts as a Next.js App Router application with TypeScript and Tailwind CSS. Phase 5 now treats activity as a first-class event stream with shared formatting, live timeline rendering, and event-category filters.
 
 The target architecture will use:
 
@@ -107,6 +107,8 @@ Status: implemented with TODO, ACTIVE, BLOCKED, REVIEW, and DONE columns. Task c
 - Every meaningful action emits an event
 - Activity feed updates live
 
+Status: implemented with a reusable event formatter, reverse-chronological live timeline, actor/timestamp/type rendering, and filters for tasks, users, timer/phase, Git, and conflicts.
+
 ### Phase 6: Sprint phase timer
 
 - Shared phases: PLANNING, CODING, REVIEW, RETRO
@@ -171,6 +173,8 @@ Phase 2 implements the reducer boundary but not the network transport. The reduc
 Phase 3 implements the transport with Socket.IO in `server.ts`. Clients use `useLiveSprintSession`, receive a current snapshot, send typed task commands, and receive updated session state after the server applies the reducer. Socket.IO was chosen for acknowledgements and reconnection support; the tradeoff is that the app now runs through a custom Next server for realtime mode.
 
 Phase 4 extends the command model with `task:create` and `task:update` commands. The server maps those commands to `task.created`, `task.updated`, `task.assigned`, `task.started`, `task.blocked`, `task.review_requested`, and `task.completed` events so the board and activity feed stay synchronized.
+
+Phase 5 centralizes readable event formatting under `src/lib/events/formatters.ts`. The reducer uses this formatter to append activity entries, and the UI groups stored activity by event category without changing the realtime engine.
 
 ## Merge-Conflict Risk Detection Strategy
 

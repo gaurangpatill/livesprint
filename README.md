@@ -2,7 +2,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is designed as a coordination engine for active sprint work: tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk should eventually synchronize live across connected clients.
 
-This repository is currently at Phase 4: live sprint board. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
+This repository is currently at Phase 5: live activity feed. Real GitHub integration, persistence, authentication, and automated conflict detection are intentionally not implemented yet.
 
 ## Current Status
 
@@ -24,6 +24,8 @@ Implemented:
 - Live task creation, editing, assignment, and status updates
 - Five-column sprint board: TODO, ACTIVE, BLOCKED, REVIEW, DONE
 - Related file path editing on tasks
+- First-class live activity timeline with event filters
+- Shared event formatter for human-readable activity messages
 - Vitest reducer and command-adapter tests
 - Project plan in `PLAN.md`
 
@@ -137,6 +139,15 @@ src/lib/mock
 6. Assign the task, move it to ACTIVE, mark it BLOCKED, move it to REVIEW, then mark it DONE.
 7. Confirm every task change updates the board and activity feed in both tabs without refresh.
 
+## Phase 5 Demo Flow
+
+1. Start the app with `npm run dev`.
+2. Open `http://localhost:3000` in two browser tabs.
+3. Join with different display names.
+4. Create, assign, edit, block, review, and complete tasks.
+5. Watch the Activity Feed update in both tabs with actor, timestamp, type badge, and readable message.
+6. Use the feed filters: All, Tasks, Users, Timer/Phase, Git, and Conflicts.
+
 ## Architecture Direction
 
 The intended MVP will keep an authoritative sprint session state on the server. Clients will send typed commands, the server will reduce those commands into state transitions, and accepted events will be broadcast to connected clients. Late joiners should receive the current authoritative state before receiving new live events.
@@ -171,6 +182,14 @@ Phase 4 expands the task flow:
 - Completion emits `task.completed`.
 
 Every task event includes `actorId` and a server timestamp, is reduced on the server, and appears in the activity feed in real time.
+
+Phase 5 makes the activity feed a first-class event stream:
+
+- `src/lib/events/formatters.ts` converts typed `LiveSprintEvent` objects into readable activity messages.
+- The reducer uses the shared formatter before appending activity entries.
+- The UI renders reverse chronological events with actor context, timestamps, typed badges, and category markers.
+- Lightweight filters group events into Tasks, Users, Timer/Phase, Git, and Conflicts.
+- Git and conflict filters are ready for future phases; they show matching placeholder events when those typed events are emitted.
 
 Conflict risk will be derived from active task file paths:
 

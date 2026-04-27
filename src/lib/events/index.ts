@@ -106,3 +106,18 @@ export const taskStatusLabels: Record<TaskStatus, string> = {
   IN_REVIEW: "In review",
   DONE: "Done",
 };
+
+export type {
+  ActivityFilter,
+  ActivityPresentation,
+} from "./formatters";
+export {
+  activityFilterLabels,
+  formatLiveSprintEvent,
+  formatStoredActivityEvent,
+  getActivityCategory,
+  getActivityLabel,
+  getTaskIdFromEvent,
+  getTaskTitle,
+  getUserName,
+} from "./formatters";

@@ -1,4 +1,9 @@
-import { taskStatusLabels, type LiveSprintEvent } from "@/lib/events";
+import {
+  formatLiveSprintEvent,
+  getTaskIdFromEvent,
+  taskStatusLabels,
+  type LiveSprintEvent,
+} from "@/lib/events";
 import type {
   ActivityEvent,
   SprintSession,
@@ -6,102 +11,22 @@ import type {
   SprintUser,
 } from "@/lib/types";
 
-function getUserName(users: SprintUser[], userId?: string) {
-  if (!userId) {
-    return "System";
-  }
-
-  return users.find((user) => user.id === userId)?.name ?? "Unknown user";
-}
-
-function getTaskTitle(tasks: SprintTask[], taskId?: string) {
-  if (!taskId) {
-    return "Unknown task";
-  }
-
-  return tasks.find((task) => task.id === taskId)?.title ?? "Unknown task";
-}
-
-function getTaskId(event: LiveSprintEvent) {
-  if ("taskId" in event) {
-    return event.taskId;
-  }
-
-  if (event.type === "task.created") {
-    return event.task.id;
-  }
-
-  if (event.type === "commit.linked") {
-    return event.commit.taskId;
-  }
-
-  return undefined;
-}
-
-function getActivityMessage(
-  previousSession: SprintSession,
-  nextSession: SprintSession,
-  event: LiveSprintEvent,
-) {
-  const actor = getUserName(nextSession.users, event.actorId);
-
-  switch (event.type) {
-    case "user.joined":
-      return `${event.user.name} joined the sprint session.`;
-    case "user.left":
-      return `${getUserName(previousSession.users, event.userId)} left the sprint session.`;
-    case "task.created":
-      return `${actor} created Task: ${event.task.title}.`;
-    case "task.updated":
-      return `${actor} updated Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
-    case "task.assigned":
-      return `${actor} assigned Task: ${getTaskTitle(nextSession.tasks, event.taskId)} to ${getUserName(
-        nextSession.users,
-        event.assigneeId,
-      )}.`;
-    case "task.started":
-      return `${actor} started Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
-    case "task.blocked":
-      return `${actor} marked Task: ${getTaskTitle(nextSession.tasks, event.taskId)} as BLOCKED${
-        event.reason ? `: ${event.reason}` : "."
-      }`;
-    case "task.review_requested":
-      return `${actor} requested review for Task: ${getTaskTitle(
-        nextSession.tasks,
-        event.taskId,
-      )}.`;
-    case "task.completed":
-      return `${actor} completed Task: ${getTaskTitle(nextSession.tasks, event.taskId)}.`;
-    case "phase.changed":
-      return `${actor} changed the sprint phase to ${event.phase}.`;
-    case "timer.started":
-      return `${actor} started the ${nextSession.timer.phase} timer.`;
-    case "timer.paused":
-      return `${actor} paused the ${nextSession.timer.phase} timer.`;
-    case "timer.reset":
-      return `${actor} reset the ${nextSession.timer.phase} timer.`;
-    case "commit.linked":
-      return `${actor} linked commit ${event.commit.sha} to ${
-        event.commit.taskId
-          ? `"${getTaskTitle(nextSession.tasks, event.commit.taskId)}"`
-          : "the sprint"
-      }.`;
-    case "conflict.risk_detected":
-      return `${event.risk.level} conflict risk detected: ${event.risk.explanation}`;
-  }
-}
-
 function createActivityEvent(
   previousSession: SprintSession,
   nextSession: SprintSession,
   event: LiveSprintEvent,
 ): ActivityEvent {
+  const presentation = formatLiveSprintEvent(event, {
+    previousSession,
+    nextSession,
+  });
+
   return {
     id: `activity-${event.id}`,
     type: event.type,
     actorId: event.actorId,
-    taskId: getTaskId(event),
-    message: getActivityMessage(previousSession, nextSession, event),
+    taskId: getTaskIdFromEvent(event),
+    message: presentation.message,
     createdAt: event.occurredAt,
   };
 }
