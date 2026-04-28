@@ -1,6 +1,6 @@
 # LiveSprint
 
-LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is not a Jira clone. It is a coordination engine that synchronizes sprint tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk while work is happening.
+LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It is a coordination engine that synchronizes sprint tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk while work is happening.
 
 The project is currently demo-ready through Phase 9. It uses a server-authoritative in-memory session, Socket.IO, typed events, a pure reducer, mock GitHub events, conflict-risk detection, and a polished dashboard UI.
 
@@ -281,13 +281,3 @@ The realtime command adapters reject practical invalid input:
 - Role-based permissions
 - Deployment-ready WebSocket infrastructure
 - Screenshots and short demo video
-
-## Screenshots
-
-Screenshots placeholder:
-
-- Dashboard overview
-- Live task board with two users
-- Activity feed filters
-- Conflict Risk panel showing HIGH risk
-- Mock GitHub event panel

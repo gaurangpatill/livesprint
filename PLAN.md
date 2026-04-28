@@ -4,7 +4,7 @@
 
 LiveSprint is a real-time engineering sprint orchestration platform for developer teams. It coordinates sprint tasks, developer presence, sprint phases, Git-style activity, and merge-conflict risk in one shared operational view.
 
-The goal is not to recreate Jira. The goal is to show how a sprint can be run as a live distributed system where every meaningful team action updates shared state immediately and predictably.
+The goal is to show how a sprint can be run as a live distributed system where every meaningful team action updates shared state immediately and predictably.
 
 ## Why This Project Exists
 
